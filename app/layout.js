@@ -33,7 +33,7 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="font-body antialiased">
+      <body className="overflow-x-hidden font-body antialiased">
         <Providers session={session}>{children}</Providers>
       </body>
     </html>

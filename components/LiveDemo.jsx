@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
 const PROMPT = "Explain quantum entanglement in two sentences.";
@@ -83,7 +83,7 @@ function TypedColumn({ col, active, onDone }) {
 
   return (
     <div
-      className={`relative flex w-[85%] shrink-0 snap-center flex-col overflow-hidden rounded-xl border bg-surface p-4 transition-all duration-500 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:content-[''] sm:w-auto sm:shrink ${
+      className={`relative flex w-full flex-col overflow-hidden rounded-xl border bg-surface p-4 transition-all duration-500 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:content-[''] sm:w-auto sm:shrink ${
         col.top
       } ${
         isWinner && active
@@ -119,8 +119,6 @@ function TypedColumn({ col, active, onDone }) {
 export default function LiveDemo() {
   const [doneKeys, setDoneKeys] = useState([]);
   const [revealed, setRevealed] = useState(false);
-  const scrollerRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
 
   function handleDone(key) {
     setDoneKeys((prev) => {
@@ -132,40 +130,17 @@ export default function LiveDemo() {
     });
   }
 
-  function handleScroll() {
-    const el = scrollerRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    setActiveIndex(idx);
-  }
-
   return (
-    <div className="rounded-2xl border border-line bg-surface2/60 p-4 shadow-2xl shadow-black/40 sm:p-6">
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface2/60 p-4 shadow-2xl shadow-black/40 sm:p-6">
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-ink/60 px-4 py-2.5">
         <span className="font-mono text-xs text-mist">You asked</span>
         <span className="h-3 w-px bg-line" />
         <span className="truncate font-mono text-xs text-paper/90">{PROMPT}</span>
       </div>
 
-      <div
-        ref={scrollerRef}
-        onScroll={handleScroll}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-thin sm:grid sm:grid-cols-3 sm:overflow-visible"
-      >
+      <div className="grid gap-3 sm:grid-cols-3">
         {COLUMNS.map((col) => (
           <TypedColumn key={col.key} col={col} active={revealed} onDone={handleDone} />
-        ))}
-      </div>
-
-      {/* Mobile scroll dots */}
-      <div className="mt-3 flex justify-center gap-1.5 sm:hidden">
-        {COLUMNS.map((col, i) => (
-          <span
-            key={col.key}
-            className={`h-1.5 rounded-full transition-all ${
-              i === activeIndex ? "w-4 bg-signal" : "w-1.5 bg-line"
-            }`}
-          />
         ))}
       </div>
 

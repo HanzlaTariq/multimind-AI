@@ -16,7 +16,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/60 bg-ink/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-gemini via-groq to-deepseek">
             <span className="h-2.5 w-2.5 rounded-sm bg-ink" />
@@ -48,7 +48,7 @@ export default function Navbar() {
 
         <button
           onClick={() => setOpen(true)}
-          className="text-paper md:hidden"
+          className="shrink-0 text-paper md:hidden"
           aria-label="Open menu"
         >
           <Menu className="h-6 w-6" />
@@ -58,13 +58,13 @@ export default function Navbar() {
       {/* Mobile menu overlay */}
       {open && (
         <div className="fixed inset-0 z-[60] bg-ink md:hidden">
-          <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center justify-between px-4 py-4 sm:px-6">
             <span className="font-display text-lg font-semibold text-paper">MultiMind</span>
             <button onClick={() => setOpen(false)} className="text-paper" aria-label="Close menu">
               <X className="h-6 w-6" />
             </button>
           </div>
-          <nav className="flex flex-col gap-1 px-6 py-4">
+          <nav className="flex flex-col gap-1 px-4 py-4 sm:px-6">
             {LINKS.map((l) => (
               <a
                 key={l.href}
@@ -76,7 +76,7 @@ export default function Navbar() {
               </a>
             ))}
           </nav>
-          <div className="mt-4 flex flex-col gap-3 px-6">
+          <div className="mt-4 flex flex-col gap-3 px-4 sm:px-6">
             <Link
               href="/login"
               onClick={() => setOpen(false)}
