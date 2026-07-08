@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Copy, Check, RefreshCw, Sparkles } from "lucide-react";
 
@@ -13,6 +13,16 @@ const MODEL_LABEL = {
 
 export default function AnswerBubble({ best, pending, onRegenerate, regenerating }) {
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState("");
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -23,6 +33,59 @@ export default function AnswerBubble({ best, pending, onRegenerate, regenerating
     } catch (e) {
       // clipboard may be unavailable — fail silently
     }
+  }
+
+  async function handleCopyCode(codeText) {
+    const cleanedText = codeText.replace(/\n$/, "");
+
+    try {
+      await navigator.clipboard.writeText(cleanedText);
+      setCopiedCode(cleanedText);
+
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+
+      copyTimerRef.current = setTimeout(() => {
+        setCopiedCode("");
+      }, 1500);
+    } catch (e) {
+      // clipboard may be unavailable — fail silently
+    }
+  }
+
+  function MarkdownCode({ inline, className, children, ...props }) {
+    const codeText = String(children);
+
+    if (inline) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+
+    const cleanedText = codeText.replace(/\n$/, "");
+    const isCopied = copiedCode === cleanedText;
+
+    return (
+      <div className="group/code relative my-3 rounded-lg border border-line bg-ink">
+        <button
+          type="button"
+          onClick={() => handleCopyCode(codeText)}
+          className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-line bg-surface/90 px-2 py-1 text-[11px] text-mist opacity-0 shadow-sm transition hover:bg-surface hover:text-paper group-hover/code:opacity-100 focus:opacity-100"
+          title="Copy code"
+        >
+          {isCopied ? <Check className="h-3.5 w-3.5 text-signal" /> : <Copy className="h-3.5 w-3.5" />}
+          {isCopied ? "Copied" : "Copy"}
+        </button>
+        <pre className="overflow-x-auto rounded-lg px-4 py-3 pt-10 text-[13px] leading-relaxed">
+          <code className={className} {...props}>
+            {children}
+          </code>
+        </pre>
+      </div>
+    );
   }
 
   if (pending || regenerating) {
@@ -53,7 +116,7 @@ export default function AnswerBubble({ best, pending, onRegenerate, regenerating
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown>{best.text}</ReactMarkdown>
+          <ReactMarkdown components={{ code: MarkdownCode }}>{best.text}</ReactMarkdown>
         </div>
       </div>
 
