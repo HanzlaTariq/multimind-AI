@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 
 const PROMPT = "Explain quantum entanglement in two sentences.";
 
@@ -11,6 +12,8 @@ const COLUMNS = [
     sub: "Llama 3.3 · 70B",
     color: "text-groq",
     dot: "bg-groq",
+    ring: "ring-groq/40",
+    top: "before:bg-groq",
     latency: 480,
     startDelay: 200,
     text:
@@ -22,6 +25,8 @@ const COLUMNS = [
     sub: "2.0 Flash",
     color: "text-gemini",
     dot: "bg-gemini",
+    ring: "ring-gemini/40",
+    top: "before:bg-gemini",
     latency: 1120,
     startDelay: 600,
     text:
@@ -33,6 +38,8 @@ const COLUMNS = [
     sub: "Chat",
     color: "text-deepseek",
     dot: "bg-deepseek",
+    ring: "ring-deepseek/40",
+    top: "before:bg-deepseek",
     latency: 1980,
     startDelay: 1000,
     text:
@@ -40,7 +47,10 @@ const COLUMNS = [
   },
 ];
 
-function TypedColumn({ col }) {
+const WINNER_KEY = "gemini";
+const WINNER_REASON = "clearest, most complete explanation";
+
+function TypedColumn({ col, active, onDone }) {
   const [visibleChars, setVisibleChars] = useState(0);
   const [done, setDone] = useState(false);
   const [started, setStarted] = useState(false);
@@ -54,6 +64,7 @@ function TypedColumn({ col }) {
           if (prev >= col.text.length) {
             clearInterval(interval);
             setDone(true);
+            onDone?.(col.key);
             return prev;
           }
           return prev + 2;
@@ -65,15 +76,26 @@ function TypedColumn({ col }) {
       clearTimeout(startTimer);
       clearInterval(interval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [col]);
 
+  const isWinner = col.key === WINNER_KEY;
+
   return (
-    <div className="flex flex-1 flex-col rounded-xl border border-line bg-surface p-4">
+    <div
+      className={`relative flex w-[85%] shrink-0 snap-center flex-col overflow-hidden rounded-xl border bg-surface p-4 transition-all duration-500 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:content-[''] sm:w-auto sm:shrink ${
+        col.top
+      } ${
+        isWinner && active
+          ? `border-transparent ring-2 ${col.ring} shadow-lg shadow-black/30`
+          : "border-line"
+      }`}
+    >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`h-1.5 w-1.5 rounded-full ${col.dot}`} />
           <span className={`font-mono text-xs font-medium ${col.color}`}>{col.name}</span>
-          <span className="font-mono text-[10px] text-mist/70">{col.sub}</span>
+          <span className="hidden font-mono text-[10px] text-mist/70 sm:inline">{col.sub}</span>
         </div>
         <span className="font-mono text-[10px] text-mist/60">
           {done ? `${col.latency}ms` : started ? "…" : ""}
@@ -83,11 +105,40 @@ function TypedColumn({ col }) {
         {col.text.slice(0, visibleChars)}
         {!done && started && <span className="animate-blink text-signal">▍</span>}
       </p>
+
+      {isWinner && active && (
+        <div className="mt-3 flex items-center gap-1.5 border-t border-line/60 pt-3 font-mono text-[10px] text-signal">
+          <Check className="h-3 w-3" />
+          Picked as the best answer
+        </div>
+      )}
     </div>
   );
 }
 
 export default function LiveDemo() {
+  const [doneKeys, setDoneKeys] = useState([]);
+  const [revealed, setRevealed] = useState(false);
+  const scrollerRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  function handleDone(key) {
+    setDoneKeys((prev) => {
+      const next = prev.includes(key) ? prev : [...prev, key];
+      if (next.length === COLUMNS.length) {
+        setTimeout(() => setRevealed(true), 300);
+      }
+      return next;
+    });
+  }
+
+  function handleScroll() {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveIndex(idx);
+  }
+
   return (
     <div className="rounded-2xl border border-line bg-surface2/60 p-4 shadow-2xl shadow-black/40 sm:p-6">
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-ink/60 px-4 py-2.5">
@@ -95,10 +146,38 @@ export default function LiveDemo() {
         <span className="h-3 w-px bg-line" />
         <span className="truncate font-mono text-xs text-paper/90">{PROMPT}</span>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-thin sm:grid sm:grid-cols-3 sm:overflow-visible"
+      >
         {COLUMNS.map((col) => (
-          <TypedColumn key={col.key} col={col} />
+          <TypedColumn key={col.key} col={col} active={revealed} onDone={handleDone} />
         ))}
+      </div>
+
+      {/* Mobile scroll dots */}
+      <div className="mt-3 flex justify-center gap-1.5 sm:hidden">
+        {COLUMNS.map((col, i) => (
+          <span
+            key={col.key}
+            className={`h-1.5 rounded-full transition-all ${
+              i === activeIndex ? "w-4 bg-signal" : "w-1.5 bg-line"
+            }`}
+          />
+        ))}
+      </div>
+
+      <div
+        className={`mt-4 flex items-center gap-2 overflow-hidden rounded-lg border border-signal/30 bg-signal/5 px-4 py-2.5 transition-all duration-500 ${
+          revealed ? "max-h-20 opacity-100" : "max-h-0 border-transparent bg-transparent px-0 py-0 opacity-0"
+        }`}
+      >
+        <Check className="h-3.5 w-3.5 shrink-0 text-signal" />
+        <span className="font-mono text-xs text-paper/90">
+          MultiMind picked <span className="text-gemini">Gemini's</span> answer — {WINNER_REASON}.
+        </span>
       </div>
     </div>
   );
