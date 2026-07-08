@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
@@ -13,6 +13,17 @@ const LINKS = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/60 bg-ink/80 backdrop-blur-md">
@@ -57,41 +68,51 @@ export default function Navbar() {
 
       {/* Mobile menu overlay */}
       {open && (
-        <div className="fixed inset-0 z-[60] bg-ink md:hidden">
-          <div className="flex items-center justify-between px-4 py-4 sm:px-6">
-            <span className="font-display text-lg font-semibold text-paper">MultiMind</span>
-            <button onClick={() => setOpen(false)} className="text-paper" aria-label="Close menu">
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-          <nav className="flex flex-col gap-1 px-4 py-4 sm:px-6">
-            {LINKS.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
+        <div className="fixed inset-0 z-[60] md:hidden">
+          <button
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+            onClick={() => setOpen(false)}
+            aria-label="Close menu overlay"
+          />
+
+          <aside className="absolute inset-y-0 left-0 w-[82vw] max-w-xs border-r border-line bg-surface shadow-2xl shadow-black/60">
+            <div className="flex items-center justify-between border-b border-line px-4 py-4">
+              <span className="font-display text-lg font-semibold text-paper">MultiMind</span>
+              <button onClick={() => setOpen(false)} className="text-paper" aria-label="Close menu">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <nav className="flex flex-col gap-1 px-4 py-4">
+              {LINKS.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-3 py-3 text-base text-paper transition hover:bg-surface2"
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="mt-2 flex flex-col gap-3 px-4">
+              <Link
+                href="/login"
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-3 text-base text-paper transition hover:bg-surface"
+                className="rounded-full border border-line px-4 py-3 text-center text-sm font-medium text-paper transition hover:border-mist"
               >
-                {l.label}
-              </a>
-            ))}
-          </nav>
-          <div className="mt-4 flex flex-col gap-3 px-4 sm:px-6">
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="rounded-full border border-line px-4 py-3 text-center text-sm font-medium text-paper"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              onClick={() => setOpen(false)}
-              className="rounded-full bg-signal px-4 py-3 text-center text-sm font-semibold text-ink"
-            >
-              Get started
-            </Link>
-          </div>
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setOpen(false)}
+                className="rounded-full bg-signal px-4 py-3 text-center text-sm font-semibold text-ink"
+              >
+                Get started
+              </Link>
+            </div>
+          </aside>
         </div>
       )}
     </header>
