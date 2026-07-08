@@ -70,13 +70,13 @@ export default function Navbar() {
       {open && (
         <div className="fixed inset-0 z-[60] md:hidden">
           <button
-            className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/70"
             onClick={() => setOpen(false)}
             aria-label="Close menu overlay"
           />
 
-          <aside className="absolute inset-y-0 left-0 w-[82vw] max-w-xs border-r border-line bg-surface shadow-2xl shadow-black/60">
-            <div className="flex items-center justify-between border-b border-line px-4 py-4">
+          <aside className="absolute inset-y-0 left-0 w-[82vw] max-w-xs border-r border-line/80 bg-ink shadow-2xl shadow-black/80">
+            <div className="flex items-center justify-between border-b border-line/80 px-4 py-4">
               <span className="font-display text-lg font-semibold text-paper">MultiMind</span>
               <button onClick={() => setOpen(false)} className="text-paper" aria-label="Close menu">
                 <X className="h-6 w-6" />
@@ -89,7 +89,7 @@ export default function Navbar() {
                   key={l.href}
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-3 text-base text-paper transition hover:bg-surface2"
+                  className="rounded-xl px-3 py-3 text-base text-paper transition hover:bg-surface/80"
                 >
                   {l.label}
                 </a>
@@ -100,7 +100,7 @@ export default function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-line px-4 py-3 text-center text-sm font-medium text-paper transition hover:border-mist"
+                className="rounded-full border border-line px-4 py-3 text-center text-sm font-medium text-paper transition hover:border-mist hover:bg-surface/70"
               >
                 Log in
               </Link>
