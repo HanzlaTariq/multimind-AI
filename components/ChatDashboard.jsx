@@ -14,6 +14,7 @@ import {
   Code2,
   Lightbulb,
   PenLine,
+  Pin,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
 
@@ -24,6 +25,39 @@ const SUGGESTIONS = [
   { icon: Sparkles, label: "Just chat", prompt: "" },
 ];
 
+const PIN_STORAGE_KEY = "multimind.pinned-turns.v1";
+
+function summarizeText(text, limit = 120) {
+  if (!text) return "";
+  const cleaned = text.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= limit) return cleaned;
+  return `${cleaned.slice(0, limit - 1).trimEnd()}…`;
+}
+
+function readPinnedStore() {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PIN_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    return {};
+  }
+}
+
+function readPinnedConversation(conversationId) {
+  if (!conversationId || typeof window === "undefined") return [];
+  const store = readPinnedStore();
+  const value = store[conversationId];
+  return Array.isArray(value) ? value.filter((index) => Number.isInteger(index)) : [];
+}
+
+function writePinnedConversation(conversationId, pinnedTurnIndexes) {
+  if (!conversationId || typeof window === "undefined") return;
+  const store = readPinnedStore();
+  store[conversationId] = pinnedTurnIndexes;
+  window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(store));
+}
+
 export default function ChatDashboard({ user }) {
   const [conversations, setConversations] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -32,9 +66,12 @@ export default function ChatDashboard({ user }) {
   const [pending, setPending] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTurnIndex, setActiveTurnIndex] = useState(null);
+  const [pinnedTurnIndexes, setPinnedTurnIndexes] = useState([]);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
+  const turnRefs = useRef([]);
 
   useEffect(() => {
     fetchConversations();
@@ -49,6 +86,17 @@ export default function ChatDashboard({ user }) {
     textareaRef.current.style.height = "auto";
     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
   }, [prompt]);
+
+  useEffect(() => {
+    if (!conversationId) {
+      setPinnedTurnIndexes([]);
+      setActiveTurnIndex(null);
+      return;
+    }
+
+    setPinnedTurnIndexes(readPinnedConversation(conversationId));
+    setActiveTurnIndex(null);
+  }, [conversationId]);
 
   async function fetchConversations() {
     try {
@@ -75,6 +123,8 @@ export default function ChatDashboard({ user }) {
     setTurns([]);
     setPrompt("");
     setSidebarOpen(false);
+    setActiveTurnIndex(null);
+    setPinnedTurnIndexes([]);
   }
 
   async function deleteConversation(e, id) {
@@ -157,6 +207,28 @@ export default function ChatDashboard({ user }) {
       setRegeneratingIndex(null);
     }
   }
+
+  function scrollToTurn(index) {
+    setActiveTurnIndex(index);
+    turnRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function togglePin(index) {
+    if (!conversationId) return;
+
+    setPinnedTurnIndexes((current) => {
+      const next = current.includes(index)
+        ? current.filter((item) => item !== index)
+        : [...current, index].sort((a, b) => a - b);
+
+      writePinnedConversation(conversationId, next);
+      return next;
+    });
+  }
+
+  const pinnedTurns = turns
+    .map((turn, index) => ({ turn, index }))
+    .filter(({ index }) => pinnedTurnIndexes.includes(index));
 
   return (
     <div className="flex h-screen bg-ink">
@@ -256,56 +328,170 @@ export default function ChatDashboard({ user }) {
         </header>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6 sm:px-8">
-          {turns.length === 0 && (
-            <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
-              <h2 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
-                Ask something. Get the best answer.
-              </h2>
-              <p className="mt-2 max-w-sm text-sm text-mist">
-                Gemini, Groq, and DeepSeek all answer behind the scenes — you just see the best one.
-              </p>
+          <div className="mx-auto flex max-w-7xl flex-col gap-6 xl:flex-row">
+            <section className="min-w-0 flex-1">
+              {turns.length === 0 ? (
+                <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
+                  <h2 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
+                    Ask something. Get the best answer.
+                  </h2>
+                  <p className="mt-2 max-w-sm text-sm text-mist">
+                    Gemini, Groq, and DeepSeek all answer behind the scenes — you just see the best one.
+                  </p>
 
-              <div className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => {
-                      setPrompt(s.prompt);
-                      textareaRef.current?.focus();
-                    }}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-3 py-4 text-center transition hover:border-signal/40 hover:bg-surface2"
-                  >
-                    <s.icon className="h-4 w-4 text-signal" />
-                    <span className="text-xs text-mist">{s.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mx-auto max-w-3xl space-y-7">
-            {turns.map((turn, i) => {
-              const isLastPending = pending && i === turns.length - 1;
-
-              return (
-                <div key={i} className="animate-rise space-y-3">
-                  <div className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper sm:max-w-[75%]">
-                      {turn.prompt}
-                    </div>
+                  <div className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => {
+                          setPrompt(s.prompt);
+                          textareaRef.current?.focus();
+                        }}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-3 py-4 text-center transition hover:border-signal/40 hover:bg-surface2"
+                      >
+                        <s.icon className="h-4 w-4 text-signal" />
+                        <span className="text-xs text-mist">{s.label}</span>
+                      </button>
+                    ))}
                   </div>
-                  <AnswerBubble
-                    best={turn.best}
-                    pending={isLastPending && !turn.best}
-                    regenerating={regeneratingIndex === i}
-                    onRegenerate={
-                      turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
-                    }
-                  />
                 </div>
-              );
-            })}
-            <div ref={bottomRef} />
+              ) : (
+                <div className="mx-auto max-w-3xl space-y-7">
+                  {turns.map((turn, i) => {
+                    const isLastPending = pending && i === turns.length - 1;
+                    const isPinned = pinnedTurnIndexes.includes(i);
+
+                    return (
+                      <div
+                        key={`${i}-${turn.createdAt || "turn"}`}
+                        ref={(el) => {
+                          turnRefs.current[i] = el;
+                        }}
+                        className={`animate-rise space-y-3 rounded-3xl border p-1.5 transition ${
+                          activeTurnIndex === i
+                            ? "border-signal/40 bg-signal/5 shadow-[0_0_0_1px_rgba(77,224,192,0.12)]"
+                            : "border-transparent"
+                        }`}
+                      >
+                        <div className="flex justify-end">
+                          <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper sm:max-w-[75%]">
+                            {turn.prompt}
+                          </div>
+                        </div>
+                        <AnswerBubble
+                          best={turn.best}
+                          pending={isLastPending && !turn.best}
+                          regenerating={regeneratingIndex === i}
+                          pinned={isPinned}
+                          onTogglePin={turn.best && turn.best.status !== "error" ? () => togglePin(i) : null}
+                          onRegenerate={
+                            turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                  <div ref={bottomRef} />
+                </div>
+              )}
+            </section>
+
+            <aside className="w-full shrink-0 xl:w-80 2xl:w-96">
+              <div className="rounded-3xl border border-line bg-surface/70 p-4 shadow-sm shadow-black/10 backdrop-blur">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.22em] text-mist/60">Conversation map</p>
+                    <h3 className="mt-1 font-display text-lg font-semibold text-paper">Important points</h3>
+                  </div>
+                  <div className="rounded-full border border-line bg-ink/60 px-2.5 py-1 text-xs text-mist">
+                    {turns.length} turns
+                  </div>
+                </div>
+
+                {turns.length === 0 ? (
+                  <p className="mt-4 text-sm leading-relaxed text-mist">
+                    Your key prompts will appear here once you start chatting. Use this panel to jump back to any part of the conversation.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {turns.map((turn, index) => {
+                      const isPendingTurn = pending && index === turns.length - 1 && !turn.best;
+
+                      return (
+                        <button
+                          key={`${index}-map-${turn.createdAt || "turn"}`}
+                          onClick={() => scrollToTurn(index)}
+                          className={`group w-full rounded-2xl border px-3 py-3 text-left transition ${
+                            activeTurnIndex === index
+                              ? "border-signal/40 bg-signal/8"
+                              : "border-line bg-ink/40 hover:border-signal/25 hover:bg-surface2"
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface2 text-[10px] text-mist">
+                              {index + 1}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-mist/60">
+                                <MessageSquare className="h-3 w-3" />
+                                Turn {index + 1}
+                              </div>
+                              <div className="mt-1 text-sm text-paper">
+                                {summarizeText(turn.prompt, 74)}
+                              </div>
+                              <p className="mt-1 text-xs leading-relaxed text-mist">
+                                {isPendingTurn
+                                  ? "Answer is loading..."
+                                  : summarizeText(turn.best?.text, 110) || "No answer yet."}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="mt-5 border-t border-line pt-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-mist/60">Pinned replies</p>
+                      <h4 className="mt-1 text-sm font-medium text-paper">
+                        {pinnedTurns.length ? `${pinnedTurns.length} saved` : "Nothing pinned yet"}
+                      </h4>
+                    </div>
+                    <Pin className="h-4 w-4 text-signal" />
+                  </div>
+
+                  {pinnedTurns.length === 0 ? (
+                    <p className="mt-3 text-sm leading-relaxed text-mist">
+                      Pin any answer with the button under the response. Saved replies stay tied to this conversation in your browser.
+                    </p>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {pinnedTurns.map(({ turn, index }) => (
+                        <button
+                          key={`${index}-pinned-${turn.createdAt || "turn"}`}
+                          onClick={() => scrollToTurn(index)}
+                          className="w-full rounded-2xl border border-line bg-ink/40 px-3 py-3 text-left transition hover:border-signal/25 hover:bg-surface2"
+                        >
+                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-mist/60">
+                            <Pin className="h-3 w-3 text-signal" />
+                            Pinned
+                          </div>
+                          <div className="mt-1 text-sm text-paper">
+                            {summarizeText(turn.prompt, 72)}
+                          </div>
+                          <p className="mt-1 max-h-20 overflow-hidden text-xs leading-relaxed text-mist">
+                            {summarizeText(turn.best?.text, 120) || "Saved reply"}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
 
