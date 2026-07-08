@@ -310,7 +310,7 @@ export default function ChatDashboard({ user }) {
         </div>
 
         <div className="border-t border-line bg-ink/95 p-3 backdrop-blur sm:p-5">
-          <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-2.5">
+          <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-3 rounded-2xl border border-line/80 bg-surface/80 p-2.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.85)]">
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -323,15 +323,15 @@ export default function ChatDashboard({ user }) {
               }}
               rows={1}
               placeholder="Message MultiMind…"
-              className="max-h-40 flex-1 resize-none rounded-xl border border-line bg-surface px-4 py-3 text-sm text-paper outline-none transition focus:border-signal"
+                className="max-h-40 min-h-[3rem] flex-1 resize-none rounded-xl border border-transparent bg-ink/60 px-4 py-3 text-sm text-paper outline-none transition placeholder:text-mist/50 focus:border-signal/70 focus:bg-ink/80 focus:shadow-[0_0_0_3px_rgba(77,224,192,0.12)]"
             />
             <button
               type="submit"
               disabled={pending || !prompt.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition hover:brightness-110 disabled:opacity-40"
+                className="group flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-signal to-[#32bfa3] text-ink shadow-[0_10px_24px_-12px_rgba(77,224,192,0.75)] transition duration-200 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_28px_-12px_rgba(77,224,192,0.9)] disabled:translate-y-0 disabled:opacity-35"
               aria-label="Send"
             >
-              <Send className="h-4 w-4" />
+                <Send className="h-4 w-4 stroke-[2.4] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </button>
           </form>
           {error && (
