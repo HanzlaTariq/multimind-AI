@@ -9,12 +9,22 @@ Rules:
 - Reply in the same language and script the user used (English, Roman Urdu/Hindi, Urdu script, etc). If the user writes in Roman Urdu/Hinglish, understand it as natural conversational language rather than parsing words as literal English terms or names (e.g. "kia hall ha" / "kya haal hai" means "how are you", not a person's name).
 - If the question is casual conversation (greetings, small talk), respond naturally and briefly in kind.
 - If the question is technical (code, math, science, etc), give a precise, correct, working answer. For code, make sure it actually runs and follows best practices for the language/framework implied.
+- Remember and use earlier context from this conversation (e.g. the user's name, preferences, or things they told you) when relevant.
 - If you are unsure or a question is ambiguous, briefly ask what's meant rather than guessing something unrelated.
 - Be concise. Avoid unnecessary preamble.`;
 
-async function callGemini(prompt) {
+// history: array of { prompt, answer } from earlier turns in this conversation
+
+async function callGemini(prompt, history) {
   const start = Date.now();
   try {
+    const contents = [];
+    for (const h of history) {
+      contents.push({ role: "user", parts: [{ text: h.prompt }] });
+      if (h.answer) contents.push({ role: "model", parts: [{ text: h.answer }] });
+    }
+    contents.push({ role: "user", parts: [{ text: prompt }] });
+
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
@@ -22,7 +32,7 @@ async function callGemini(prompt) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ parts: [{ text: prompt }] }],
+          contents,
         }),
       }
     );
@@ -40,9 +50,16 @@ async function callGemini(prompt) {
   }
 }
 
-async function callGroq(prompt) {
+async function callGroq(prompt, history) {
   const start = Date.now();
   try {
+    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    for (const h of history) {
+      messages.push({ role: "user", content: h.prompt });
+      if (h.answer) messages.push({ role: "assistant", content: h.answer });
+    }
+    messages.push({ role: "user", content: prompt });
+
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -51,10 +68,7 @@ async function callGroq(prompt) {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: prompt },
-        ],
+        messages,
       }),
     });
     const data = await res.json();
@@ -71,9 +85,16 @@ async function callGroq(prompt) {
   }
 }
 
-async function callDeepSeek(prompt) {
+async function callDeepSeek(prompt, history) {
   const start = Date.now();
   try {
+    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    for (const h of history) {
+      messages.push({ role: "user", content: h.prompt });
+      if (h.answer) messages.push({ role: "assistant", content: h.answer });
+    }
+    messages.push({ role: "user", content: prompt });
+
     const res = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
@@ -82,10 +103,7 @@ async function callDeepSeek(prompt) {
       },
       body: JSON.stringify({
         model: "deepseek-chat",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: prompt },
-        ],
+        messages,
       }),
     });
     const data = await res.json();
@@ -103,7 +121,6 @@ async function callDeepSeek(prompt) {
 }
 
 async function judgeBest(prompt, candidates) {
-  // candidates: array of { model, text } — only successful ones, length >= 2
   const options = candidates
     .map((c, i) => `Answer ${i + 1} (${c.model}):\n${c.text}`)
     .join("\n\n---\n\n");
@@ -139,7 +156,6 @@ Reply with ONLY the number of the single best answer (most accurate, complete, a
     // fall through to heuristic fallback below
   }
 
-  // Fallback: pick the longest, most substantial answer
   return candidates.reduce((best, c) => (c.text.length > best.text.length ? c : best));
 }
 
@@ -156,10 +172,31 @@ export async function POST(req) {
     return Response.json({ error: "Prompt cannot be empty" }, { status: 400 });
   }
 
+  await dbConnect();
+
+  // Load prior turns from this conversation so the models have memory of it
+  let history = [];
+  let existingConversation = null;
+  if (conversationId) {
+    existingConversation = await Conversation.findOne({
+      _id: conversationId,
+      user: session.user.id,
+    });
+    if (existingConversation) {
+      history = existingConversation.turns.map((t) => ({
+        prompt: t.prompt,
+        answer: t.best?.text || "",
+      }));
+    }
+  }
+
+  // Keep only the last 10 turns to stay within reasonable token limits
+  const trimmedHistory = history.slice(-10);
+
   const [gemini, groq, deepseek] = await Promise.all([
-    callGemini(prompt),
-    callGroq(prompt),
-    callDeepSeek(prompt),
+    callGemini(prompt, trimmedHistory),
+    callGroq(prompt, trimmedHistory),
+    callDeepSeek(prompt, trimmedHistory),
   ]);
 
   const all = [gemini, groq, deepseek];
@@ -181,23 +218,16 @@ export async function POST(req) {
 
   const turn = {
     prompt,
-    responses: all, // full detail kept for history/debugging
+    responses: all,
     best,
     createdAt: new Date(),
   };
 
-  await dbConnect();
-
-  let conversation;
-  if (conversationId) {
-    conversation = await Conversation.findOneAndUpdate(
-      { _id: conversationId, user: session.user.id },
-      { $push: { turns: turn } },
-      { new: true }
-    );
-  }
-
-  if (!conversation) {
+  let conversation = existingConversation;
+  if (conversation) {
+    conversation.turns.push(turn);
+    await conversation.save();
+  } else {
     conversation = await Conversation.create({
       user: session.user.id,
       title: prompt.slice(0, 60),
