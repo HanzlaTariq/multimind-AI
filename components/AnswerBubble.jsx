@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Copy, Check, RefreshCw, Sparkles, Pin, PinOff } from "lucide-react";
+import { Copy, Check, RefreshCw, Sparkles } from "lucide-react";
 
 const MODEL_LABEL = {
   gemini: "Gemini",
@@ -11,14 +11,7 @@ const MODEL_LABEL = {
   multimind: "MultiMind",
 };
 
-export default function AnswerBubble({
-  best,
-  pending,
-  onRegenerate,
-  regenerating,
-  pinned,
-  onTogglePin,
-}) {
+export default function AnswerBubble({ best, pending, onRegenerate, regenerating }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -86,17 +79,6 @@ export default function AnswerBubble({
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Regenerate
-            </button>
-          )}
-          {onTogglePin && (
-            <button
-              onClick={onTogglePin}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
-              title={pinned ? "Unpin response" : "Pin response"}
-              aria-pressed={pinned}
-            >
-              {pinned ? <PinOff className="h-3.5 w-3.5 text-signal" /> : <Pin className="h-3.5 w-3.5" />}
-              {pinned ? "Pinned" : "Pin"}
             </button>
           )}
         </div>
