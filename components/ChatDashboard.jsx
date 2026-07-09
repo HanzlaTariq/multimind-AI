@@ -14,6 +14,7 @@ import {
   Code2,
   Lightbulb,
   PenLine,
+  ListTree,
   Pin,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
@@ -25,39 +26,6 @@ const SUGGESTIONS = [
   { icon: Sparkles, label: "Just chat", prompt: "" },
 ];
 
-const PIN_STORAGE_KEY = "multimind.pinned-turns.v1";
-
-function summarizeText(text, limit = 120) {
-  if (!text) return "";
-  const cleaned = text.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= limit) return cleaned;
-  return `${cleaned.slice(0, limit - 1).trimEnd()}…`;
-}
-
-function readPinnedStore() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(PIN_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (err) {
-    return {};
-  }
-}
-
-function readPinnedConversation(conversationId) {
-  if (!conversationId || typeof window === "undefined") return [];
-  const store = readPinnedStore();
-  const value = store[conversationId];
-  return Array.isArray(value) ? value.filter((index) => Number.isInteger(index)) : [];
-}
-
-function writePinnedConversation(conversationId, pinnedTurnIndexes) {
-  if (!conversationId || typeof window === "undefined") return;
-  const store = readPinnedStore();
-  store[conversationId] = pinnedTurnIndexes;
-  window.localStorage.setItem(PIN_STORAGE_KEY, JSON.stringify(store));
-}
-
 export default function ChatDashboard({ user }) {
   const [conversations, setConversations] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -66,8 +34,8 @@ export default function ChatDashboard({ user }) {
   const [pending, setPending] = useState(false);
   const [regeneratingIndex, setRegeneratingIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTurnIndex, setActiveTurnIndex] = useState(null);
-  const [pinnedTurnIndexes, setPinnedTurnIndexes] = useState([]);
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const [outlineTab, setOutlineTab] = useState("outline"); // "outline" | "pinned"
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
@@ -79,24 +47,13 @@ export default function ChatDashboard({ user }) {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns, pending]);
+  }, [turns.length, pending]);
 
   useEffect(() => {
     if (!textareaRef.current) return;
     textareaRef.current.style.height = "auto";
     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
   }, [prompt]);
-
-  useEffect(() => {
-    if (!conversationId) {
-      setPinnedTurnIndexes([]);
-      setActiveTurnIndex(null);
-      return;
-    }
-
-    setPinnedTurnIndexes(readPinnedConversation(conversationId));
-    setActiveTurnIndex(null);
-  }, [conversationId]);
 
   async function fetchConversations() {
     try {
@@ -123,8 +80,6 @@ export default function ChatDashboard({ user }) {
     setTurns([]);
     setPrompt("");
     setSidebarOpen(false);
-    setActiveTurnIndex(null);
-    setPinnedTurnIndexes([]);
   }
 
   async function deleteConversation(e, id) {
@@ -208,31 +163,37 @@ export default function ChatDashboard({ user }) {
     }
   }
 
+  async function handleTogglePin(index) {
+    if (!conversationId) return;
+    const nextPinned = !turns[index]?.pinned;
+
+    // optimistic update
+    setTurns((prev) => prev.map((t, i) => (i === index ? { ...t, pinned: nextPinned } : t)));
+
+    try {
+      await fetch(`/api/conversations/${conversationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turnIndex: index, pinned: nextPinned }),
+      });
+    } catch (e) {
+      // revert on failure
+      setTurns((prev) => prev.map((t, i) => (i === index ? { ...t, pinned: !nextPinned } : t)));
+    }
+  }
+
   function scrollToTurn(index) {
-    setActiveTurnIndex(index);
+    setOutlineOpen(false);
     turnRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function togglePin(index) {
-    if (!conversationId) return;
-
-    setPinnedTurnIndexes((current) => {
-      const next = current.includes(index)
-        ? current.filter((item) => item !== index)
-        : [...current, index].sort((a, b) => a - b);
-
-      writePinnedConversation(conversationId, next);
-      return next;
-    });
-  }
-
   const pinnedTurns = turns
-    .map((turn, index) => ({ turn, index }))
-    .filter(({ index }) => pinnedTurnIndexes.includes(index));
+    .map((t, i) => ({ ...t, index: i }))
+    .filter((t) => t.pinned);
 
   return (
     <div className="flex h-screen bg-ink">
-      {/* Sidebar */}
+      {/* Left sidebar — conversation history */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-72 transform border-r border-line bg-surface transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -320,183 +281,93 @@ export default function ChatDashboard({ user }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-line px-4 py-3 lg:hidden">
-          <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-            <Menu className="h-5 w-5 text-paper" />
-          </button>
-          <span className="font-display text-sm font-semibold text-paper">MultiMind</span>
+        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar" className="lg:hidden">
+              <Menu className="h-5 w-5 text-paper" />
+            </button>
+            <span className="font-display text-sm font-semibold text-paper lg:hidden">MultiMind</span>
+          </div>
+
+          {turns.length > 0 && (
+            <button
+              onClick={() => setOutlineOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
+            >
+              <ListTree className="h-3.5 w-3.5" />
+              Outline
+              {pinnedTurns.length > 0 && (
+                <span className="ml-1 flex items-center gap-0.5 rounded-full bg-signal/15 px-1.5 py-0.5 text-signal">
+                  <Pin className="h-2.5 w-2.5" />
+                  {pinnedTurns.length}
+                </span>
+              )}
+            </button>
+          )}
         </header>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6 sm:px-8">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6 xl:flex-row">
-            <section className="min-w-0 flex-1">
-              {turns.length === 0 ? (
-                <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
-                  <h2 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
-                    Ask something. Get the best answer.
-                  </h2>
-                  <p className="mt-2 max-w-sm text-sm text-mist">
-                    Gemini, Groq, and DeepSeek all answer behind the scenes — you just see the best one.
-                  </p>
+          {turns.length === 0 && (
+            <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
+              <h2 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
+                Ask something. Get the best answer.
+              </h2>
+              <p className="mt-2 max-w-sm text-sm text-mist">
+                Gemini, Groq, and DeepSeek all answer behind the scenes — you just see the best one.
+              </p>
 
-                  <div className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
-                    {SUGGESTIONS.map((s) => (
-                      <button
-                        key={s.label}
-                        onClick={() => {
-                          setPrompt(s.prompt);
-                          textareaRef.current?.focus();
-                        }}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-3 py-4 text-center transition hover:border-signal/40 hover:bg-surface2"
-                      >
-                        <s.icon className="h-4 w-4 text-signal" />
-                        <span className="text-xs text-mist">{s.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="mx-auto max-w-3xl space-y-7">
-                  {turns.map((turn, i) => {
-                    const isLastPending = pending && i === turns.length - 1;
-                    const isPinned = pinnedTurnIndexes.includes(i);
-
-                    return (
-                      <div
-                        key={`${i}-${turn.createdAt || "turn"}`}
-                        ref={(el) => {
-                          turnRefs.current[i] = el;
-                        }}
-                        className={`animate-rise space-y-3 rounded-3xl border p-1.5 transition ${
-                          activeTurnIndex === i
-                            ? "border-signal/40 bg-signal/5 shadow-[0_0_0_1px_rgba(77,224,192,0.12)]"
-                            : "border-transparent"
-                        }`}
-                      >
-                        <div className="flex justify-end">
-                          <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper sm:max-w-[75%]">
-                            {turn.prompt}
-                          </div>
-                        </div>
-                        <AnswerBubble
-                          best={turn.best}
-                          pending={isLastPending && !turn.best}
-                          regenerating={regeneratingIndex === i}
-                          pinned={isPinned}
-                          onTogglePin={turn.best && turn.best.status !== "error" ? () => togglePin(i) : null}
-                          onRegenerate={
-                            turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
-                          }
-                        />
-                      </div>
-                    );
-                  })}
-                  <div ref={bottomRef} />
-                </div>
-              )}
-            </section>
-
-            <aside className="w-full shrink-0 xl:w-80 2xl:w-96">
-              <div className="rounded-3xl border border-line bg-surface/70 p-4 shadow-sm shadow-black/10 backdrop-blur">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-mist/60">Conversation map</p>
-                    <h3 className="mt-1 font-display text-lg font-semibold text-paper">Important points</h3>
-                  </div>
-                  <div className="rounded-full border border-line bg-ink/60 px-2.5 py-1 text-xs text-mist">
-                    {turns.length} turns
-                  </div>
-                </div>
-
-                {turns.length === 0 ? (
-                  <p className="mt-4 text-sm leading-relaxed text-mist">
-                    Your key prompts will appear here once you start chatting. Use this panel to jump back to any part of the conversation.
-                  </p>
-                ) : (
-                  <div className="mt-4 space-y-3">
-                    {turns.map((turn, index) => {
-                      const isPendingTurn = pending && index === turns.length - 1 && !turn.best;
-
-                      return (
-                        <button
-                          key={`${index}-map-${turn.createdAt || "turn"}`}
-                          onClick={() => scrollToTurn(index)}
-                          className={`group w-full rounded-2xl border px-3 py-3 text-left transition ${
-                            activeTurnIndex === index
-                              ? "border-signal/40 bg-signal/8"
-                              : "border-line bg-ink/40 hover:border-signal/25 hover:bg-surface2"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2">
-                            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface2 text-[10px] text-mist">
-                              {index + 1}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-mist/60">
-                                <MessageSquare className="h-3 w-3" />
-                                Turn {index + 1}
-                              </div>
-                              <div className="mt-1 text-sm text-paper">
-                                {summarizeText(turn.prompt, 74)}
-                              </div>
-                              <p className="mt-1 text-xs leading-relaxed text-mist">
-                                {isPendingTurn
-                                  ? "Answer is loading..."
-                                  : summarizeText(turn.best?.text, 110) || "No answer yet."}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="mt-5 border-t border-line pt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.22em] text-mist/60">Pinned replies</p>
-                      <h4 className="mt-1 text-sm font-medium text-paper">
-                        {pinnedTurns.length ? `${pinnedTurns.length} saved` : "Nothing pinned yet"}
-                      </h4>
-                    </div>
-                    <Pin className="h-4 w-4 text-signal" />
-                  </div>
-
-                  {pinnedTurns.length === 0 ? (
-                    <p className="mt-3 text-sm leading-relaxed text-mist">
-                      Pin any answer with the button under the response. Saved replies stay tied to this conversation in your browser.
-                    </p>
-                  ) : (
-                    <div className="mt-3 space-y-2">
-                      {pinnedTurns.map(({ turn, index }) => (
-                        <button
-                          key={`${index}-pinned-${turn.createdAt || "turn"}`}
-                          onClick={() => scrollToTurn(index)}
-                          className="w-full rounded-2xl border border-line bg-ink/40 px-3 py-3 text-left transition hover:border-signal/25 hover:bg-surface2"
-                        >
-                          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-mist/60">
-                            <Pin className="h-3 w-3 text-signal" />
-                            Pinned
-                          </div>
-                          <div className="mt-1 text-sm text-paper">
-                            {summarizeText(turn.prompt, 72)}
-                          </div>
-                          <p className="mt-1 max-h-20 overflow-hidden text-xs leading-relaxed text-mist">
-                            {summarizeText(turn.best?.text, 120) || "Saved reply"}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              <div className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s.label}
+                    onClick={() => {
+                      setPrompt(s.prompt);
+                      textareaRef.current?.focus();
+                    }}
+                    className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-3 py-4 text-center transition hover:border-signal/40 hover:bg-surface2"
+                  >
+                    <s.icon className="h-4 w-4 text-signal" />
+                    <span className="text-xs text-mist">{s.label}</span>
+                  </button>
+                ))}
               </div>
-            </aside>
+            </div>
+          )}
+
+          <div className="mx-auto max-w-3xl space-y-7">
+            {turns.map((turn, i) => {
+              const isLastPending = pending && i === turns.length - 1;
+
+              return (
+                <div
+                  key={i}
+                  ref={(el) => (turnRefs.current[i] = el)}
+                  className="animate-rise scroll-mt-20 space-y-3"
+                >
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper sm:max-w-[75%]">
+                      {turn.prompt}
+                    </div>
+                  </div>
+                  <AnswerBubble
+                    best={turn.best}
+                    pending={isLastPending && !turn.best}
+                    regenerating={regeneratingIndex === i}
+                    onRegenerate={
+                      turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
+                    }
+                    pinned={!!turn.pinned}
+                    onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
+                  />
+                </div>
+              );
+            })}
+            <div ref={bottomRef} />
           </div>
         </div>
 
         <div className="border-t border-line bg-ink/95 p-3 backdrop-blur sm:p-5">
-          <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-3 rounded-2xl border border-line/80 bg-surface/80 p-2.5 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.85)]">
+          <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-2.5">
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -509,22 +380,109 @@ export default function ChatDashboard({ user }) {
               }}
               rows={1}
               placeholder="Message MultiMind…"
-                className="max-h-40 min-h-[3rem] flex-1 resize-none rounded-xl border border-transparent bg-ink/60 px-4 py-3 text-sm text-paper outline-none transition placeholder:text-mist/50 focus:border-signal/70 focus:bg-ink/80 focus:shadow-[0_0_0_3px_rgba(77,224,192,0.12)]"
+              className="max-h-40 flex-1 resize-none rounded-xl border border-line bg-surface px-4 py-3 text-sm text-paper outline-none transition focus:border-signal"
             />
             <button
               type="submit"
               disabled={pending || !prompt.trim()}
-                className="group flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-signal to-[#32bfa3] text-ink shadow-[0_10px_24px_-12px_rgba(77,224,192,0.75)] transition duration-200 hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_28px_-12px_rgba(77,224,192,0.9)] disabled:translate-y-0 disabled:opacity-35"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition hover:brightness-110 disabled:opacity-40"
               aria-label="Send"
             >
-                <Send className="h-4 w-4 stroke-[2.4] transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <Send className="h-4 w-4" />
             </button>
           </form>
-          {error && (
-            <p className="mx-auto mt-2 max-w-3xl text-xs text-red-400">{error}</p>
-          )}
+          {error && <p className="mx-auto mt-2 max-w-3xl text-xs text-red-400">{error}</p>}
         </div>
       </div>
+
+      {/* Right panel — outline + pinned answers */}
+      {outlineOpen && (
+        <button
+          className="fixed inset-0 z-40 bg-black/40"
+          onClick={() => setOutlineOpen(false)}
+          aria-label="Close outline overlay"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] transform border-l border-line bg-surface transition-transform duration-200 ${
+          outlineOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between border-b border-line px-4 py-4">
+            <span className="font-display text-sm font-semibold text-paper">This conversation</span>
+            <button onClick={() => setOutlineOpen(false)} className="text-mist" aria-label="Close">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex border-b border-line px-4">
+            <button
+              onClick={() => setOutlineTab("outline")}
+              className={`border-b-2 px-3 py-2.5 text-xs font-medium transition ${
+                outlineTab === "outline"
+                  ? "border-signal text-paper"
+                  : "border-transparent text-mist hover:text-paper"
+              }`}
+            >
+              Outline
+            </button>
+            <button
+              onClick={() => setOutlineTab("pinned")}
+              className={`flex items-center gap-1 border-b-2 px-3 py-2.5 text-xs font-medium transition ${
+                outlineTab === "pinned"
+                  ? "border-signal text-paper"
+                  : "border-transparent text-mist hover:text-paper"
+              }`}
+            >
+              Pinned {pinnedTurns.length > 0 && `(${pinnedTurns.length})`}
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
+            {outlineTab === "outline" &&
+              (turns.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs text-mist/60">Nothing here yet.</p>
+              ) : (
+                <div className="space-y-1">
+                  {turns.map((t, i) => (
+                    <button
+                      key={i}
+                      onClick={() => scrollToTurn(i)}
+                      className="flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+                    >
+                      <span className="mt-0.5 shrink-0 font-mono text-[10px] text-mist/50">
+                        {i + 1}
+                      </span>
+                      <span className="line-clamp-2">{t.prompt}</span>
+                      {t.pinned && <Pin className="ml-auto h-3 w-3 shrink-0 text-signal" />}
+                    </button>
+                  ))}
+                </div>
+              ))}
+
+            {outlineTab === "pinned" &&
+              (pinnedTurns.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs text-mist/60">
+                  Pin any answer and it'll show up here for quick access.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  {pinnedTurns.map((t) => (
+                    <button
+                      key={t.index}
+                      onClick={() => scrollToTurn(t.index)}
+                      className="flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+                    >
+                      <Pin className="mt-0.5 h-3 w-3 shrink-0 text-signal" />
+                      <span className="line-clamp-2">{t.prompt}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

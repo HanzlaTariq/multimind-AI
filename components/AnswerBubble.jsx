@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Copy, Check, RefreshCw, Sparkles } from "lucide-react";
+import { Copy, Check, RefreshCw, Sparkles, Pin, PinOff } from "lucide-react";
 
 const MODEL_LABEL = {
   gemini: "Gemini",
@@ -11,18 +11,15 @@ const MODEL_LABEL = {
   multimind: "MultiMind",
 };
 
-export default function AnswerBubble({ best, pending, onRegenerate, regenerating }) {
+export default function AnswerBubble({
+  best,
+  pending,
+  onRegenerate,
+  regenerating,
+  pinned,
+  onTogglePin,
+}) {
   const [copied, setCopied] = useState(false);
-  const [copiedCode, setCopiedCode] = useState("");
-  const copyTimerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-      }
-    };
-  }, []);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -33,59 +30,6 @@ export default function AnswerBubble({ best, pending, onRegenerate, regenerating
     } catch (e) {
       // clipboard may be unavailable — fail silently
     }
-  }
-
-  async function handleCopyCode(codeText) {
-    const cleanedText = codeText.replace(/\n$/, "");
-
-    try {
-      await navigator.clipboard.writeText(cleanedText);
-      setCopiedCode(cleanedText);
-
-      if (copyTimerRef.current) {
-        clearTimeout(copyTimerRef.current);
-      }
-
-      copyTimerRef.current = setTimeout(() => {
-        setCopiedCode("");
-      }, 1500);
-    } catch (e) {
-      // clipboard may be unavailable — fail silently
-    }
-  }
-
-  function MarkdownCode({ inline, className, children, ...props }) {
-    const codeText = String(children);
-
-    if (inline) {
-      return (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    }
-
-    const cleanedText = codeText.replace(/\n$/, "");
-    const isCopied = copiedCode === cleanedText;
-
-    return (
-      <div className="group/code relative my-3 rounded-lg border border-line bg-ink">
-        <button
-          type="button"
-          onClick={() => handleCopyCode(codeText)}
-          className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-line bg-surface/90 px-2 py-1 text-[11px] text-mist opacity-0 shadow-sm transition hover:bg-surface hover:text-paper group-hover/code:opacity-100 focus:opacity-100"
-          title="Copy code"
-        >
-          {isCopied ? <Check className="h-3.5 w-3.5 text-signal" /> : <Copy className="h-3.5 w-3.5" />}
-          {isCopied ? "Copied" : "Copy"}
-        </button>
-        <pre className="overflow-x-auto rounded-lg px-4 py-3 pt-10 text-[13px] leading-relaxed">
-          <code className={className} {...props}>
-            {children}
-          </code>
-        </pre>
-      </div>
-    );
   }
 
   if (pending || regenerating) {
@@ -107,22 +51,32 @@ export default function AnswerBubble({ best, pending, onRegenerate, regenerating
   return (
     <div className="group max-w-2xl">
       <div
-        className={`rounded-2xl border px-4 py-3.5 shadow-sm shadow-black/10 ${
-          isError ? "border-red-500/30 bg-red-500/5" : "border-line bg-surface"
+        className={`relative rounded-2xl border px-4 py-3.5 shadow-sm shadow-black/10 ${
+          isError
+            ? "border-red-500/30 bg-red-500/5"
+            : pinned
+            ? "border-signal/40 bg-surface"
+            : "border-line bg-surface"
         }`}
       >
+        {pinned && !isError && (
+          <div className="absolute -top-2.5 left-4 flex items-center gap-1 rounded-full border border-signal/40 bg-ink px-2 py-0.5 font-mono text-[10px] text-signal">
+            <Pin className="h-2.5 w-2.5" />
+            Pinned
+          </div>
+        )}
         <div
           className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:bg-ink prose-pre:border prose-pre:border-line prose-pre:rounded-lg prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown components={{ code: MarkdownCode }}>{best.text}</ReactMarkdown>
+          <ReactMarkdown>{best.text}</ReactMarkdown>
         </div>
       </div>
 
       {!isError && (
         <div className="mt-1.5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          <div className="flex items-center gap-1 text-[10px] text-mist/50 mr-2">
+          <div className="mr-2 flex items-center gap-1 text-[10px] text-mist/50">
             <Sparkles className="h-3 w-3" />
             {MODEL_LABEL[best.model] || "MultiMind"}
           </div>
@@ -142,6 +96,18 @@ export default function AnswerBubble({ best, pending, onRegenerate, regenerating
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Regenerate
+            </button>
+          )}
+          {onTogglePin && (
+            <button
+              onClick={onTogglePin}
+              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition hover:bg-surface2 ${
+                pinned ? "text-signal" : "text-mist hover:text-paper"
+              }`}
+              title={pinned ? "Unpin this answer" : "Pin this answer"}
+            >
+              {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+              {pinned ? "Unpin" : "Pin"}
             </button>
           )}
         </div>

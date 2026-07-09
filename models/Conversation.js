@@ -15,6 +15,7 @@ const TurnSchema = new mongoose.Schema(
     prompt: { type: String, required: true },
     responses: [ResponseSchema],
     best: ResponseSchema,
+    pinned: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: false }
