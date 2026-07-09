@@ -107,7 +107,7 @@ const FAQS = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="min-h-screen bg-ink pt-20 md:pt-0">
       <Navbar />
 
       {/* Hero */}
