@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Copy, Check, RefreshCw, Sparkles, Pin, PinOff, Download } from "lucide-react";
 
@@ -67,6 +67,19 @@ export default function AnswerBubble({
   onTogglePin,
 }) {
   const [copied, setCopied] = useState(false);
+  const [entering, setEntering] = useState(false);
+
+  useEffect(() => {
+    if (pending || regenerating || !best) {
+      setEntering(false);
+      return;
+    }
+
+    setEntering(false);
+    const frame = requestAnimationFrame(() => setEntering(true));
+
+    return () => cancelAnimationFrame(frame);
+  }, [best?.text, best?.imageData, best?.status, pending, regenerating]);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -158,7 +171,7 @@ export default function AnswerBubble({
   }
 
   return (
-    <div className="group max-w-2xl">
+    <div className={`group max-w-2xl ${entering ? "answer-bubble-enter" : ""}`}>
       <div
         className={`relative rounded-2xl border px-4 py-3.5 shadow-sm shadow-black/10 ${
           isError
