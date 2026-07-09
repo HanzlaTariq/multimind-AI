@@ -16,8 +16,15 @@ import {
   PenLine,
   ListTree,
   Pin,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
+
+const MAX_ATTACHMENT_BYTES = 150 * 1024; // 150KB — keeps token usage/cost reasonable
+const ATTACHMENT_ACCEPT =
+  ".js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.h,.cs,.go,.rb,.php,.html,.css,.scss,.json,.txt,.md,.sql,.sh,.yaml,.yml,.xml";
 
 const SUGGESTIONS = [
   { icon: Code2, label: "Debug my code", prompt: "Explain what's wrong with this code and fix it:\n\n" },
@@ -37,9 +44,12 @@ export default function ChatDashboard({ user }) {
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [outlineTab, setOutlineTab] = useState("outline"); // "outline" | "pinned"
   const [error, setError] = useState("");
+  const [attachment, setAttachment] = useState(null); // { name, content }
+  const [imageMode, setImageMode] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const turnRefs = useRef([]);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchConversations();
@@ -79,7 +89,33 @@ export default function ChatDashboard({ user }) {
     setConversationId(null);
     setTurns([]);
     setPrompt("");
+    setAttachment(null);
+    setImageMode(false);
     setSidebarOpen(false);
+  }
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      setError(`"${file.name}" is too large — please attach a file under 150KB.`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setError("");
+      setAttachment({ name: file.name, content: reader.result });
+      textareaRef.current?.focus();
+    };
+    reader.onerror = () => setError("Couldn't read that file — please try again.");
+    reader.readAsText(file);
+  }
+
+  function removeAttachment() {
+    setAttachment(null);
   }
 
   async function deleteConversation(e, id) {
@@ -93,18 +129,34 @@ export default function ChatDashboard({ user }) {
     }
   }
 
-  async function sendPrompt(text) {
-    if (!text.trim() || pending) return;
+  async function sendPrompt(text, opts = {}) {
+    const useImageMode = opts.imageMode ?? imageMode;
+    const useAttachment = opts.attachment ?? attachment;
+
+    if ((!text.trim() && !useAttachment) || pending) return;
 
     setError("");
     setPending(true);
-    setTurns((prev) => [...prev, { prompt: text, responses: [] }]);
+    setTurns((prev) => [
+      ...prev,
+      {
+        prompt: text || `Review ${useAttachment?.name || "this file"}`,
+        attachmentName: useAttachment?.name || "",
+        responses: [],
+        _pendingType: useImageMode ? "image" : "text",
+      },
+    ]);
 
     try {
-      const res = await fetch("/api/chat", {
+      const endpoint = useImageMode ? "/api/image" : "/api/chat";
+      const body = useImageMode
+        ? { prompt: text, conversationId }
+        : { prompt: text, conversationId, attachment: useAttachment };
+
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text, conversationId }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
@@ -128,21 +180,27 @@ export default function ChatDashboard({ user }) {
 
   async function handleSend(e) {
     e.preventDefault();
-    if (!prompt.trim() || pending) return;
+    if ((!prompt.trim() && !attachment) || pending) return;
     const text = prompt;
+    const currentAttachment = attachment;
+    const currentImageMode = imageMode;
     setPrompt("");
-    await sendPrompt(text);
+    setAttachment(null);
+    await sendPrompt(text, { attachment: currentAttachment, imageMode: currentImageMode });
   }
 
   async function handleRegenerate(index) {
     const turn = turns[index];
     if (!turn || regeneratingIndex !== null) return;
 
+    const isImageTurn = turn.best?.type === "image";
+
     setRegeneratingIndex(index);
     setError("");
 
     try {
-      const res = await fetch("/api/chat", {
+      const endpoint = isImageTurn ? "/api/image" : "/api/chat";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: turn.prompt, conversationId }),
@@ -345,13 +403,22 @@ export default function ChatDashboard({ user }) {
                   className="animate-rise scroll-mt-20 space-y-3"
                 >
                   <div className="flex justify-end">
-                    <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper sm:max-w-[75%]">
-                      {turn.prompt}
+                    <div className="flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-[75%]">
+                      {turn.attachmentName && (
+                        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-mist">
+                          <FileText className="h-3 w-3" />
+                          {turn.attachmentName}
+                        </div>
+                      )}
+                      <div className="rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper">
+                        {turn.prompt}
+                      </div>
                     </div>
                   </div>
                   <AnswerBubble
                     best={turn.best}
                     pending={isLastPending && !turn.best}
+                    pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
                     regenerating={regeneratingIndex === i}
                     onRegenerate={
                       turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
@@ -367,34 +434,87 @@ export default function ChatDashboard({ user }) {
         </div>
 
         <div className="border-t border-line bg-ink/95 p-3 backdrop-blur sm:p-5">
-          <form
-            onSubmit={handleSend}
-            className="mx-auto flex max-w-3xl items-end gap-2.5 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/20 transition focus-within:border-signal/60 focus-within:shadow-signal/10"
-          >
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend(e);
-                }
-              }}
-              rows={1}
-              placeholder="Message MultiMind…"
-              className="scrollbar-thin max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-paper outline-none placeholder:text-mist/60"
-            />
-            <button
-              type="submit"
-              disabled={pending || !prompt.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition-all hover:brightness-110 hover:shadow-md hover:shadow-signal/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:brightness-100 disabled:hover:shadow-none"
-              aria-label="Send"
+          <div className="mx-auto max-w-3xl">
+            {attachment && (
+              <div className="mb-2 flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-paper">
+                <FileText className="h-3.5 w-3.5 text-signal" />
+                {attachment.name}
+                <button
+                  onClick={removeAttachment}
+                  className="text-mist transition hover:text-paper"
+                  aria-label="Remove attachment"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            <form
+              onSubmit={handleSend}
+              className="flex items-end gap-2.5 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/20 transition focus-within:border-signal/60 focus-within:shadow-signal/10"
             >
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
-          {error && <p className="mx-auto mt-2 max-w-3xl text-xs text-red-400">{error}</p>}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ATTACHMENT_ACCEPT}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={imageMode}
+                className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-mist transition hover:bg-surface2 hover:text-paper disabled:opacity-30"
+                title="Attach a code/text file"
+                aria-label="Attach file"
+              >
+                <Paperclip className="h-4 w-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setImageMode((v) => !v)}
+                className={`mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+                  imageMode
+                    ? "bg-signal/15 text-signal"
+                    : "text-mist hover:bg-surface2 hover:text-paper"
+                }`}
+                title={imageMode ? "Image mode on — click to switch back to chat" : "Generate an image instead"}
+                aria-label="Toggle image generation mode"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </button>
+
+              <textarea
+                ref={textareaRef}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(e);
+                  }
+                }}
+                rows={1}
+                placeholder={imageMode ? "Describe an image to generate…" : "Message MultiMind…"}
+                className="scrollbar-thin max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-paper outline-none placeholder:text-mist/60"
+              />
+              <button
+                type="submit"
+                disabled={pending || (!prompt.trim() && !attachment)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition-all hover:brightness-110 hover:shadow-md hover:shadow-signal/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:brightness-100 disabled:hover:shadow-none"
+                aria-label="Send"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </form>
+            {imageMode && (
+              <p className="mt-1.5 px-1 text-[11px] text-mist/60">
+                Image mode is on — your next message will generate an image instead of a chat reply.
+              </p>
+            )}
+            {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+          </div>
         </div>
       </div>
 

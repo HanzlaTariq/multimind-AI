@@ -159,6 +159,21 @@ Reply with ONLY the number of the single best answer (most accurate, complete, a
   return candidates.reduce((best, c) => (c.text.length > best.text.length ? c : best));
 }
 
+function buildEffectivePrompt(prompt, attachment) {
+  if (!attachment?.content) return prompt;
+
+  // Guard against runaway payloads/tokens
+  const MAX_CHARS = 60000;
+  const content =
+    attachment.content.length > MAX_CHARS
+      ? attachment.content.slice(0, MAX_CHARS) + "\n\n[...truncated, file too long...]"
+      : attachment.content;
+
+  return `The user attached a file named "${attachment.name}". Here are its contents:\n\n\`\`\`\n${content}\n\`\`\`\n\nUser's message: ${
+    prompt?.trim() || "Please review this file and point out anything that should be fixed."
+  }`;
+}
+
 export async function POST(req) {
   const session = await getServerSession(authOptions);
 
@@ -166,9 +181,9 @@ export async function POST(req) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { prompt, conversationId } = await req.json();
+  const { prompt, conversationId, attachment } = await req.json();
 
-  if (!prompt || !prompt.trim()) {
+  if ((!prompt || !prompt.trim()) && !attachment?.content) {
     return Response.json({ error: "Prompt cannot be empty" }, { status: 400 });
   }
 
@@ -192,11 +207,12 @@ export async function POST(req) {
 
   // Keep only the last 10 turns to stay within reasonable token limits
   const trimmedHistory = history.slice(-10);
+  const effectivePrompt = buildEffectivePrompt(prompt, attachment);
 
   const [gemini, groq, deepseek] = await Promise.all([
-    callGemini(prompt, trimmedHistory),
-    callGroq(prompt, trimmedHistory),
-    callDeepSeek(prompt, trimmedHistory),
+    callGemini(effectivePrompt, trimmedHistory),
+    callGroq(effectivePrompt, trimmedHistory),
+    callDeepSeek(effectivePrompt, trimmedHistory),
   ]);
 
   const all = [gemini, groq, deepseek];
@@ -213,11 +229,12 @@ export async function POST(req) {
   } else if (successful.length === 1) {
     best = successful[0];
   } else {
-    best = await judgeBest(prompt, successful);
+    best = await judgeBest(effectivePrompt, successful);
   }
 
   const turn = {
-    prompt,
+    prompt: prompt?.trim() || `Review ${attachment?.name || "this file"}`,
+    attachmentName: attachment?.name || "",
     responses: all,
     best,
     createdAt: new Date(),
@@ -230,7 +247,7 @@ export async function POST(req) {
   } else {
     conversation = await Conversation.create({
       user: session.user.id,
-      title: prompt.slice(0, 60),
+      title: turn.prompt.slice(0, 60),
       turns: [turn],
     });
   }

@@ -3,7 +3,9 @@ import mongoose from "mongoose";
 const ResponseSchema = new mongoose.Schema(
   {
     model: { type: String, enum: ["gemini", "groq", "deepseek", "multimind"], required: true },
+    type: { type: String, enum: ["text", "image"], default: "text" },
     text: { type: String, default: "" },
+    imageData: { type: String, default: "" }, // data URL for generated images
     latencyMs: { type: Number, default: 0 },
     status: { type: String, enum: ["ok", "error"], default: "ok" },
   },
@@ -13,6 +15,7 @@ const ResponseSchema = new mongoose.Schema(
 const TurnSchema = new mongoose.Schema(
   {
     prompt: { type: String, required: true },
+    attachmentName: { type: String, default: "" },
     responses: [ResponseSchema],
     best: ResponseSchema,
     pinned: { type: Boolean, default: false },
