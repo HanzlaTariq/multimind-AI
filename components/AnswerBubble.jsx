@@ -11,6 +11,57 @@ const MODEL_LABEL = {
   multimind: "MultiMind",
 };
 
+function CodeBlock({ inline, className, children, ...props }) {
+  const [copied, setCopied] = useState(false);
+  const codeText = String(children).replace(/\n$/, "");
+
+  if (inline) {
+    return (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  async function handleCopyCode() {
+    try {
+      await navigator.clipboard.writeText(codeText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      // clipboard may be unavailable — fail silently
+    }
+  }
+
+  // Pull the language out of className (react-markdown gives "language-js" etc)
+  const lang = /language-(\w+)/.exec(className || "")?.[1];
+
+  return (
+    <div className="group/code relative my-2.5">
+      <div className="flex items-center justify-between rounded-t-lg border border-b-0 border-line bg-surface2 px-3 py-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-wide text-mist/60">
+          {lang || "code"}
+        </span>
+        <button
+          onClick={handleCopyCode}
+          className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] text-mist transition hover:bg-surface hover:text-paper"
+          title="Copy code"
+        >
+          {copied ? (
+            <Check className="h-3 w-3 text-signal" />
+          ) : (
+            <Copy className="h-3 w-3" />
+          )}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+      <pre className="overflow-x-auto rounded-b-lg border border-line bg-ink p-3">
+        <code className={className}>{children}</code>
+      </pre>
+    </div>
+  );
+}
+
 export default function AnswerBubble({
   best,
   pending,
@@ -66,11 +117,11 @@ export default function AnswerBubble({
           </div>
         )}
         <div
-          className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:bg-ink prose-pre:border prose-pre:border-line prose-pre:rounded-lg prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${
+          className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown>{best.text}</ReactMarkdown>
+          <ReactMarkdown components={{ code: CodeBlock }}>{best.text}</ReactMarkdown>
         </div>
       </div>
 
