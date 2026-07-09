@@ -168,7 +168,7 @@ export default function ChatDashboard({ user }) {
       }
 
       setConversationId(data.conversationId);
-      setTurns((prev) => [...prev.slice(0, -1), data.turn]);
+      setTurns((prev) => [...prev.slice(0, -1), { ...data.turn, animate: true }]);
       fetchConversations();
     } catch (err) {
       setError("Network error — please try again");
@@ -420,6 +420,7 @@ export default function ChatDashboard({ user }) {
                     pending={isLastPending && !turn.best}
                     pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
                     regenerating={regeneratingIndex === i}
+                    typewriter={!!turn.animate}
                     onRegenerate={
                       turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
                     }

@@ -65,13 +65,16 @@ export default function AnswerBubble({
   regenerating,
   pinned,
   onTogglePin,
+  typewriter = false,
 }) {
   const [copied, setCopied] = useState(false);
   const [entering, setEntering] = useState(false);
+  const [displayText, setDisplayText] = useState("");
 
   useEffect(() => {
     if (pending || regenerating || !best) {
       setEntering(false);
+      setDisplayText("");
       return;
     }
 
@@ -80,6 +83,41 @@ export default function AnswerBubble({
 
     return () => cancelAnimationFrame(frame);
   }, [best?.text, best?.imageData, best?.status, pending, regenerating]);
+
+  useEffect(() => {
+    if (pending || regenerating || !best) {
+      return;
+    }
+
+    const fullText = best.text || "";
+    if (!typewriter || !fullText || best.type === "image") {
+      setDisplayText(fullText);
+      return;
+    }
+
+    let index = 0;
+    let cancelled = false;
+    setDisplayText("");
+
+    const step = () => {
+      if (cancelled) return;
+
+      index = Math.min(index + Math.max(1, Math.ceil(fullText.length / 80)), fullText.length);
+      setDisplayText(fullText.slice(0, index));
+
+      if (index < fullText.length) {
+        const delay = fullText.length > 240 ? 12 : 18;
+        window.setTimeout(step, delay);
+      }
+    };
+
+    const start = window.setTimeout(step, 40);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(start);
+    };
+  }, [best, pending, regenerating, typewriter]);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -192,7 +230,10 @@ export default function AnswerBubble({
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown components={{ code: CodeBlock }}>{best.text}</ReactMarkdown>
+          <ReactMarkdown components={{ code: CodeBlock }}>{displayText}</ReactMarkdown>
+          {typewriter && displayText.length < (best.text || "").length && !isError && (
+            <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 rounded-sm bg-signal/70 align-middle animate-pulse" />
+          )}
         </div>
       </div>
 
