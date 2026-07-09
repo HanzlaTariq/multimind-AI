@@ -367,7 +367,10 @@ export default function ChatDashboard({ user }) {
         </div>
 
         <div className="border-t border-line bg-ink/95 p-3 backdrop-blur sm:p-5">
-          <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-2.5">
+          <form
+            onSubmit={handleSend}
+            className="mx-auto flex max-w-3xl items-end gap-2.5 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/20 transition focus-within:border-signal/60 focus-within:shadow-signal/10"
+          >
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -380,12 +383,12 @@ export default function ChatDashboard({ user }) {
               }}
               rows={1}
               placeholder="Message MultiMind…"
-              className="max-h-40 flex-1 resize-none rounded-xl border border-line bg-surface px-4 py-3 text-sm text-paper outline-none transition focus:border-signal"
+              className="scrollbar-thin max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-paper outline-none placeholder:text-mist/60"
             />
             <button
               type="submit"
               disabled={pending || !prompt.trim()}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition hover:brightness-110 disabled:opacity-40"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition-all hover:brightness-110 hover:shadow-md hover:shadow-signal/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:brightness-100 disabled:hover:shadow-none"
               aria-label="Send"
             >
               <Send className="h-4 w-4" />
