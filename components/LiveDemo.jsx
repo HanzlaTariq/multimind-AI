@@ -28,7 +28,7 @@ const COLUMNS = [
     ring: "ring-gemini/40",
     top: "before:bg-gemini",
     latency: 1120,
-    startDelay: 6000,
+    startDelay: 600,
     text:
       "Entanglement is a quantum correlation where two particles share one combined state, so measuring one immediately fixes the outcome for the other. Einstein famously called this 'spooky action at a distance.'",
   },
