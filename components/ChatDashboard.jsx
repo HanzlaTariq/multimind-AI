@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
   Send,
@@ -19,8 +20,10 @@ import {
   Paperclip,
   Image as ImageIcon,
   FileText,
+  FileDown,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
+import { exportConversationToPdf } from "@/lib/pdfExport";
 
 const MAX_ATTACHMENT_BYTES = 150 * 1024; // 150KB — keeps token usage/cost reasonable
 const ATTACHMENT_ACCEPT =
@@ -168,7 +171,7 @@ export default function ChatDashboard({ user }) {
       }
 
       setConversationId(data.conversationId);
-      setTurns((prev) => [...prev.slice(0, -1), { ...data.turn, animate: true }]);
+      setTurns((prev) => [...prev.slice(0, -1), data.turn]);
       fetchConversations();
     } catch (err) {
       setError("Network error — please try again");
@@ -276,10 +279,17 @@ export default function ChatDashboard({ user }) {
 
           <button
             onClick={startNewChat}
-            className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-paper transition hover:border-signal/50 hover:bg-surface2"
+            className="mb-2 flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-paper transition hover:border-signal/50 hover:bg-surface2"
           >
             <Plus className="h-4 w-4" /> New chat
           </button>
+
+          <Link
+            href="/dashboard/pdf-tools"
+            className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-mist transition hover:border-signal/50 hover:bg-surface2 hover:text-paper"
+          >
+            <FileDown className="h-4 w-4" /> Compress PDF
+          </Link>
 
           <div className="flex-1 space-y-1 overflow-y-auto scrollbar-thin">
             {conversations.length === 0 && (
@@ -348,19 +358,29 @@ export default function ChatDashboard({ user }) {
           </div>
 
           {turns.length > 0 && (
-            <button
-              onClick={() => setOutlineOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
-            >
-              <ListTree className="h-3.5 w-3.5" />
-              Outline
-              {pinnedTurns.length > 0 && (
-                <span className="ml-1 flex items-center gap-0.5 rounded-full bg-signal/15 px-1.5 py-0.5 text-signal">
-                  <Pin className="h-2.5 w-2.5" />
-                  {pinnedTurns.length}
-                </span>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportConversationToPdf(turns)}
+                className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
+                title="Export this whole conversation as a PDF"
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Export PDF</span>
+              </button>
+              <button
+                onClick={() => setOutlineOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
+              >
+                <ListTree className="h-3.5 w-3.5" />
+                Outline
+                {pinnedTurns.length > 0 && (
+                  <span className="ml-1 flex items-center gap-0.5 rounded-full bg-signal/15 px-1.5 py-0.5 text-signal">
+                    <Pin className="h-2.5 w-2.5" />
+                    {pinnedTurns.length}
+                  </span>
+                )}
+              </button>
+            </div>
           )}
         </header>
 
@@ -420,7 +440,6 @@ export default function ChatDashboard({ user }) {
                     pending={isLastPending && !turn.best}
                     pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
                     regenerating={regeneratingIndex === i}
-                    typewriter={!!turn.animate}
                     onRegenerate={
                       turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
                     }

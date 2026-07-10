@@ -11,6 +11,7 @@ Rules:
 - If the question is technical (code, math, science, etc), give a precise, correct, working answer. For code, make sure it actually runs and follows best practices for the language/framework implied.
 - Remember and use earlier context from this conversation (e.g. the user's name, preferences, or things they told you) when relevant.
 - If you are unsure or a question is ambiguous, briefly ask what's meant rather than guessing something unrelated.
+- When explaining a process, flow, architecture, hierarchy, or relationship between steps/entities, include a Mermaid diagram in a \`\`\`mermaid code block if it would genuinely help understanding — don't force one into purely conversational or simple factual answers.
 - Be concise. Avoid unnecessary preamble.`;
 
 // history: array of { prompt, answer } from earlier turns in this conversation

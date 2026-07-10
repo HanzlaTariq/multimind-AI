@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Copy, Check, RefreshCw, Sparkles, Pin, PinOff, Download } from "lucide-react";
+import {
+  Copy,
+  Check,
+  RefreshCw,
+  Sparkles,
+  Pin,
+  PinOff,
+  Download,
+  FileDown,
+} from "lucide-react";
+import MermaidDiagram from "@/components/MermaidDiagram";
+import { exportTextToPdf } from "@/lib/pdfExport";
 
 const MODEL_LABEL = {
   gemini: "Gemini",
@@ -14,6 +25,7 @@ const MODEL_LABEL = {
 function CodeBlock({ inline, className, children, ...props }) {
   const [copied, setCopied] = useState(false);
   const codeText = String(children).replace(/\n$/, "");
+  const lang = /language-(\w+)/.exec(className || "")?.[1];
 
   if (inline) {
     return (
@@ -21,6 +33,10 @@ function CodeBlock({ inline, className, children, ...props }) {
         {children}
       </code>
     );
+  }
+
+  if (lang === "mermaid") {
+    return <MermaidDiagram code={codeText} />;
   }
 
   async function handleCopyCode() {
@@ -32,8 +48,6 @@ function CodeBlock({ inline, className, children, ...props }) {
       // clipboard may be unavailable — fail silently
     }
   }
-
-  const lang = /language-(\w+)/.exec(className || "")?.[1];
 
   return (
     <div className="group/code relative my-2.5">
@@ -65,59 +79,8 @@ export default function AnswerBubble({
   regenerating,
   pinned,
   onTogglePin,
-  typewriter = false,
 }) {
   const [copied, setCopied] = useState(false);
-  const [entering, setEntering] = useState(false);
-  const [displayText, setDisplayText] = useState("");
-
-  useEffect(() => {
-    if (pending || regenerating || !best) {
-      setEntering(false);
-      setDisplayText("");
-      return;
-    }
-
-    setEntering(false);
-    const frame = requestAnimationFrame(() => setEntering(true));
-
-    return () => cancelAnimationFrame(frame);
-  }, [best?.text, best?.imageData, best?.status, pending, regenerating]);
-
-  useEffect(() => {
-    if (pending || regenerating || !best) {
-      return;
-    }
-
-    const fullText = best.text || "";
-    if (!typewriter || !fullText || best.type === "image") {
-      setDisplayText(fullText);
-      return;
-    }
-
-    let index = 0;
-    let cancelled = false;
-    setDisplayText("");
-
-    const step = () => {
-      if (cancelled) return;
-
-      index = Math.min(index + Math.max(1, Math.ceil(fullText.length / 80)), fullText.length);
-      setDisplayText(fullText.slice(0, index));
-
-      if (index < fullText.length) {
-        const delay = fullText.length > 240 ? 12 : 18;
-        window.setTimeout(step, delay);
-      }
-    };
-
-    const start = window.setTimeout(step, 40);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(start);
-    };
-  }, [best, pending, regenerating, typewriter]);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -128,6 +91,11 @@ export default function AnswerBubble({
     } catch (e) {
       // clipboard may be unavailable — fail silently
     }
+  }
+
+  function handleExportPdf() {
+    if (!best?.text) return;
+    exportTextToPdf(best.text, "multimind-answer.pdf");
   }
 
   if (pending || regenerating) {
@@ -209,7 +177,7 @@ export default function AnswerBubble({
   }
 
   return (
-    <div className={`group max-w-2xl ${entering ? "answer-bubble-enter" : ""}`}>
+    <div className="group max-w-2xl">
       <div
         className={`relative rounded-2xl border px-4 py-3.5 shadow-sm shadow-black/10 ${
           isError
@@ -230,15 +198,12 @@ export default function AnswerBubble({
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown components={{ code: CodeBlock }}>{displayText}</ReactMarkdown>
-          {typewriter && displayText.length < (best.text || "").length && !isError && (
-            <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 rounded-sm bg-signal/70 align-middle animate-pulse" />
-          )}
+          <ReactMarkdown components={{ code: CodeBlock }}>{best.text}</ReactMarkdown>
         </div>
       </div>
 
       {!isError && (
-        <div className="mt-1.5 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <div className="mr-2 flex items-center gap-1 text-[10px] text-mist/50">
             <Sparkles className="h-3 w-3" />
             {MODEL_LABEL[best.model] || "MultiMind"}
@@ -250,6 +215,14 @@ export default function AnswerBubble({
           >
             {copied ? <Check className="h-3.5 w-3.5 text-signal" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            onClick={handleExportPdf}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+            title="Export this answer as PDF"
+          >
+            <FileDown className="h-3.5 w-3.5" />
+            PDF
           </button>
           {onRegenerate && (
             <button
