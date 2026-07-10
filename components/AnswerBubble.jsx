@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Copy,
@@ -79,8 +79,49 @@ export default function AnswerBubble({
   regenerating,
   pinned,
   onTogglePin,
+  shouldType,
+  onTypingDone,
 }) {
   const [copied, setCopied] = useState(false);
+  const [visibleChars, setVisibleChars] = useState(
+    shouldType && best?.text ? 0 : best?.text?.length || 0
+  );
+  const typedForRef = useRef(null);
+
+  useEffect(() => {
+    if (!best?.text) return;
+
+    // Already fully shown for this exact text (e.g. loaded from history, or
+    // already finished typing) — don't restart.
+    if (!shouldType || typedForRef.current === best.text) {
+      setVisibleChars(best.text.length);
+      return;
+    }
+
+    typedForRef.current = best.text;
+    setVisibleChars(0);
+
+    const total = best.text.length;
+    // Scale speed so very long answers don't take forever, but short ones
+    // still feel like they're being typed rather than instant.
+    const step = Math.max(1, Math.round(total / 120));
+    const intervalMs = 12;
+
+    const interval = setInterval(() => {
+      setVisibleChars((prev) => {
+        const next = prev + step;
+        if (next >= total) {
+          clearInterval(interval);
+          onTypingDone?.();
+          return total;
+        }
+        return next;
+      });
+    }, intervalMs);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [best?.text, shouldType]);
 
   async function handleCopy() {
     if (!best?.text) return;
@@ -198,7 +239,12 @@ export default function AnswerBubble({
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown components={{ code: CodeBlock }}>{best.text}</ReactMarkdown>
+          <ReactMarkdown components={{ code: CodeBlock }}>
+            {best.text.slice(0, visibleChars)}
+          </ReactMarkdown>
+          {visibleChars < best.text.length && (
+            <span className="animate-blink text-signal">▍</span>
+          )}
         </div>
       </div>
 

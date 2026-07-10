@@ -53,6 +53,7 @@ export default function ChatDashboard({ user }) {
   const textareaRef = useRef(null);
   const turnRefs = useRef([]);
   const fileInputRef = useRef(null);
+  const alreadyShownRef = useRef(new Set()); // indices that shouldn't (re)play the typewriter
 
   useEffect(() => {
     fetchConversations();
@@ -83,12 +84,15 @@ export default function ChatDashboard({ user }) {
     const res = await fetch(`/api/conversations/${id}`);
     const data = await res.json();
     if (res.ok) {
+      const loadedTurns = data.conversation.turns || [];
+      alreadyShownRef.current = new Set(loadedTurns.map((_, i) => i));
       setConversationId(id);
-      setTurns(data.conversation.turns || []);
+      setTurns(loadedTurns);
     }
   }
 
   function startNewChat() {
+    alreadyShownRef.current = new Set();
     setConversationId(null);
     setTurns([]);
     setPrompt("");
@@ -216,6 +220,7 @@ export default function ChatDashboard({ user }) {
       }
 
       setTurns((prev) => prev.map((t, i) => (i === index ? data.turn : t)));
+      alreadyShownRef.current.delete(index);
       fetchConversations();
     } catch (err) {
       setError("Network error — please try again");
