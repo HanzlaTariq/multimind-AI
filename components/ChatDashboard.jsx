@@ -450,6 +450,10 @@ export default function ChatDashboard({ user }) {
                     }
                     pinned={!!turn.pinned}
                     onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
+                    shouldType={!!turn.best && !alreadyShownRef.current.has(i)}
+                    onTypingDone={() => {
+                      alreadyShownRef.current.add(i);
+                    }}
                   />
                 </div>
               );

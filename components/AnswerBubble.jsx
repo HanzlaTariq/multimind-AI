@@ -248,7 +248,7 @@ export default function AnswerBubble({
         </div>
       </div>
 
-      {!isError && (
+      {!isError && visibleChars >= best.text.length && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <div className="mr-2 flex items-center gap-1 text-[10px] text-mist/50">
             <Sparkles className="h-3 w-3" />
