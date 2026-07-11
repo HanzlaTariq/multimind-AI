@@ -25,16 +25,20 @@ import {
 import AnswerBubble from "@/components/AnswerBubble";
 import { exportConversationToPdf } from "@/lib/pdfExport";
 
-const MAX_ATTACHMENT_BYTES = 150 * 1024; // 150KB — keeps token usage/cost reasonable
+const MAX_ATTACHMENT_BYTES = 150 * 1024;
 const ATTACHMENT_ACCEPT =
   ".js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.h,.cs,.go,.rb,.php,.html,.css,.scss,.json,.txt,.md,.sql,.sh,.yaml,.yml,.xml";
 
 const SUGGESTIONS = [
-  { icon: Code2, label: "Debug my code", prompt: "Explain what's wrong with this code and fix it:\n\n" },
-  { icon: Lightbulb, label: "Explain a concept", prompt: "Explain how " },
-  { icon: PenLine, label: "Write something", prompt: "Write a short " },
-  { icon: Sparkles, label: "Just chat", prompt: "" },
+  { icon: Code2, label: "Debug", prompt: "Explain what's wrong with this code and fix it:\n\n" },
+  { icon: Lightbulb, label: "Explain", prompt: "Explain how " },
+  { icon: PenLine, label: "Write", prompt: "Write a short " },
+  { icon: Sparkles, label: "Chat", prompt: "" },
 ];
+
+function firstName(name) {
+  return name?.split(" ")[0] || name || "there";
+}
 
 export default function ChatDashboard({ user }) {
   const [conversations, setConversations] = useState([]);
@@ -45,15 +49,17 @@ export default function ChatDashboard({ user }) {
   const [regeneratingIndex, setRegeneratingIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
-  const [outlineTab, setOutlineTab] = useState("outline"); // "outline" | "pinned"
+  const [outlineTab, setOutlineTab] = useState("outline");
   const [error, setError] = useState("");
-  const [attachment, setAttachment] = useState(null); // { name, content }
+  const [attachment, setAttachment] = useState(null);
   const [imageMode, setImageMode] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const turnRefs = useRef([]);
   const fileInputRef = useRef(null);
-  const alreadyShownRef = useRef(new Set()); // indices that shouldn't (re)play the typewriter
+  const alreadyShownRef = useRef(new Set());
+
+  const isEmpty = turns.length === 0;
 
   useEffect(() => {
     fetchConversations();
@@ -103,7 +109,7 @@ export default function ChatDashboard({ user }) {
 
   function handleFileChange(e) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
 
     if (file.size > MAX_ATTACHMENT_BYTES) {
@@ -233,7 +239,6 @@ export default function ChatDashboard({ user }) {
     if (!conversationId) return;
     const nextPinned = !turns[index]?.pinned;
 
-    // optimistic update
     setTurns((prev) => prev.map((t, i) => (i === index ? { ...t, pinned: nextPinned } : t)));
 
     try {
@@ -243,7 +248,6 @@ export default function ChatDashboard({ user }) {
         body: JSON.stringify({ turnIndex: index, pinned: nextPinned }),
       });
     } catch (e) {
-      // revert on failure
       setTurns((prev) => prev.map((t, i) => (i === index ? { ...t, pinned: !nextPinned } : t)));
     }
   }
@@ -253,25 +257,127 @@ export default function ChatDashboard({ user }) {
     turnRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  const pinnedTurns = turns
-    .map((t, i) => ({ ...t, index: i }))
-    .filter((t) => t.pinned);
+  const pinnedTurns = turns.map((t, i) => ({ ...t, index: i })).filter((t) => t.pinned);
+  const initials = user?.name?.[0]?.toUpperCase() || "U";
+
+  const inputBar = (
+    <div className="mx-auto w-full max-w-2xl">
+      {attachment && (
+        <div className="mb-2 flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-paper">
+          <FileText className="h-3.5 w-3.5 text-signal" />
+          {attachment.name}
+          <button
+            onClick={removeAttachment}
+            className="text-mist transition hover:text-paper"
+            aria-label="Remove attachment"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
+      <form
+        onSubmit={handleSend}
+        className={`flex items-end gap-2 rounded-[1.75rem] border border-line bg-surface p-2.5 transition-all focus-within:border-mist/50 ${
+          isEmpty ? "shadow-2xl shadow-black/30" : "shadow-lg shadow-black/20"
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ATTACHMENT_ACCEPT}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={imageMode}
+          className="mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-mist transition hover:bg-surface2 hover:text-paper disabled:opacity-30"
+          title="Attach a code/text file"
+          aria-label="Attach file"
+        >
+          <Paperclip className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setImageMode((v) => !v)}
+          className={`mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+            imageMode ? "bg-signal/15 text-signal" : "text-mist hover:bg-surface2 hover:text-paper"
+          }`}
+          title={imageMode ? "Image mode on" : "Generate an image instead"}
+          aria-label="Toggle image generation mode"
+        >
+          <ImageIcon className="h-4 w-4" />
+        </button>
+
+        <textarea
+          ref={textareaRef}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(e);
+            }
+          }}
+          rows={1}
+          placeholder={imageMode ? "Describe an image to generate…" : "How can I help you today?"}
+          className="scrollbar-thin max-h-40 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-[15px] text-paper outline-none placeholder:text-mist/50"
+        />
+        <button
+          type="submit"
+          disabled={pending || (!prompt.trim() && !attachment)}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper text-ink transition-all hover:bg-signal active:scale-95 disabled:cursor-not-allowed disabled:bg-surface2 disabled:text-mist/40"
+          aria-label="Send"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </form>
+
+      {isEmpty && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s.label}
+              onClick={() => {
+                setPrompt(s.prompt);
+                textareaRef.current?.focus();
+              }}
+              className="flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm text-paper/90 transition hover:border-mist/40 hover:bg-surface2"
+            >
+              <s.icon className="h-3.5 w-3.5 text-mist" />
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {imageMode && (
+        <p className="mt-2 text-center text-[11px] text-mist/50">
+          Image mode is on — your next message will generate an image instead of a chat reply.
+        </p>
+      )}
+      {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
+    </div>
+  );
 
   return (
     <div className="flex h-screen bg-ink">
-      {/* Left sidebar — conversation history */}
+      {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 transform border-r border-line bg-surface transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-line/70 bg-ink transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-full flex-col p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="flex items-center gap-2 font-display text-sm font-semibold text-paper">
+        <div className="flex h-full flex-col p-3">
+          <div className="mb-4 flex items-center justify-between px-1.5 pt-1">
+            <span className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-gemini via-groq to-deepseek">
                 <span className="h-2 w-2 rounded-sm bg-ink" />
               </span>
-              MultiMind
+              <span className="font-display text-[15px] font-semibold text-paper">MultiMind</span>
             </span>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -284,39 +390,46 @@ export default function ChatDashboard({ user }) {
 
           <button
             onClick={startNewChat}
-            className="mb-2 flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-paper transition hover:border-signal/50 hover:bg-surface2"
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-paper transition hover:bg-surface"
           >
-            <Plus className="h-4 w-4" /> New chat
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <Plus className="h-3.5 w-3.5" />
+            </span>
+            New chat
           </button>
 
           <Link
             href="/dashboard/pdf-tools"
-            className="mb-4 flex items-center justify-center gap-2 rounded-lg border border-line px-3 py-2 text-sm font-medium text-mist transition hover:border-signal/50 hover:bg-surface2 hover:text-paper"
+            className="mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
           >
-            <FileDown className="h-4 w-4" /> Compress PDF
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <FileDown className="h-3.5 w-3.5" />
+            </span>
+            Compress PDF
           </Link>
 
-          <div className="flex-1 space-y-1 overflow-y-auto scrollbar-thin">
+          <div className="mb-1 mt-2 px-2.5 text-xs font-medium text-mist/60">Recents</div>
+
+          <div className="flex-1 space-y-0.5 overflow-y-auto scrollbar-thin">
             {conversations.length === 0 && (
-              <p className="px-2 py-4 text-center text-xs text-mist/60">
-                Your conversations will show up here.
-              </p>
+              <p className="px-2.5 py-4 text-xs text-mist/50">Your chats will show up here.</p>
             )}
             {conversations.map((c) => (
               <button
                 key={c._id}
                 onClick={() => openConversation(c._id)}
-                className={`group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-surface2 ${
-                  conversationId === c._id ? "bg-surface2 text-paper" : "text-mist"
+                className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition ${
+                  conversationId === c._id
+                    ? "bg-surface text-paper"
+                    : "text-mist hover:bg-surface hover:text-paper"
                 }`}
               >
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
                 <span className="flex-1 truncate">{c.title}</span>
                 <span
                   role="button"
                   tabIndex={0}
                   onClick={(e) => deleteConversation(e, c._id)}
-                  className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/70"
+                  className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/60"
                   aria-label="Delete conversation"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -325,16 +438,19 @@ export default function ChatDashboard({ user }) {
             ))}
           </div>
 
-          <div className="mt-4 flex items-center justify-between border-t border-line pt-4">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface2 font-mono text-xs text-paper">
-                {user?.name?.[0]?.toUpperCase() || "U"}
+          <div className="mt-2 flex items-center justify-between rounded-lg px-2 py-2">
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 font-mono text-xs font-semibold text-paper">
+                {initials}
               </div>
-              <span className="truncate text-sm text-mist">{user?.name}</span>
+              <div className="min-w-0">
+                <p className="truncate text-sm text-paper">{user?.name}</p>
+                <p className="text-xs text-mist/60">Free plan</p>
+              </div>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-mist transition hover:text-paper"
+              className="shrink-0 rounded-lg p-1.5 text-mist transition hover:bg-surface2 hover:text-paper"
               aria-label="Log out"
               title="Log out"
             >
@@ -354,197 +470,102 @@ export default function ChatDashboard({ user }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar" className="lg:hidden">
-              <Menu className="h-5 w-5 text-paper" />
-            </button>
-            <span className="font-display text-sm font-semibold text-paper lg:hidden">MultiMind</span>
-          </div>
+        <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <button onClick={() => setSidebarOpen(true)} aria-label="Open sidebar" className="lg:hidden">
+            <Menu className="h-5 w-5 text-paper" />
+          </button>
+          <span className="font-display text-sm font-semibold text-paper lg:hidden">MultiMind</span>
 
-          {turns.length > 0 && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => exportConversationToPdf(turns)}
-                className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
-                title="Export this whole conversation as a PDF"
-              >
-                <FileDown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Export PDF</span>
-              </button>
-              <button
-                onClick={() => setOutlineOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-mist transition hover:border-signal/40 hover:text-paper"
-              >
-                <ListTree className="h-3.5 w-3.5" />
-                Outline
-                {pinnedTurns.length > 0 && (
-                  <span className="ml-1 flex items-center gap-0.5 rounded-full bg-signal/15 px-1.5 py-0.5 text-signal">
-                    <Pin className="h-2.5 w-2.5" />
-                    {pinnedTurns.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {!isEmpty && (
+              <>
+                <button
+                  onClick={() => exportConversationToPdf(turns)}
+                  className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
+                  title="Export this whole conversation as a PDF"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => setOutlineOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
+                >
+                  <ListTree className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Outline</span>
+                  {pinnedTurns.length > 0 && (
+                    <span className="flex items-center gap-0.5 rounded-full bg-signal/15 px-1.5 py-0.5 text-signal">
+                      <Pin className="h-2.5 w-2.5" />
+                      {pinnedTurns.length}
+                    </span>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6 sm:px-8">
-          {turns.length === 0 && (
-            <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center text-center">
-              <h2 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
-                Ask something. Get the best answer.
-              </h2>
-              <p className="mt-2 max-w-sm text-sm text-mist">
-                Gemini, Groq, and DeepSeek all answer behind the scenes — you just see the best one.
-              </p>
+        {isEmpty ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-4 pb-24">
+            <div className="mb-8 flex items-center gap-3">
+              <Sparkles className="h-7 w-7 shrink-0 text-groq" />
+              <h1 className="font-serif text-3xl italic tracking-tight text-paper sm:text-5xl">
+                Back at it, {firstName(user?.name)}
+              </h1>
+            </div>
+            {inputBar}
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto scrollbar-thin px-4 py-6 sm:px-8">
+              <div className="mx-auto max-w-2xl space-y-8">
+                {turns.map((turn, i) => {
+                  const isLastPending = pending && i === turns.length - 1;
 
-              <div className="mt-8 grid w-full grid-cols-2 gap-2.5 sm:grid-cols-4">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.label}
-                    onClick={() => {
-                      setPrompt(s.prompt);
-                      textareaRef.current?.focus();
-                    }}
-                    className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-3 py-4 text-center transition hover:border-signal/40 hover:bg-surface2"
-                  >
-                    <s.icon className="h-4 w-4 text-signal" />
-                    <span className="text-xs text-mist">{s.label}</span>
-                  </button>
-                ))}
+                  return (
+                    <div
+                      key={i}
+                      ref={(el) => (turnRefs.current[i] = el)}
+                      className="animate-rise scroll-mt-20 space-y-3"
+                    >
+                      <div className="flex justify-end">
+                        <div className="flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-[75%]">
+                          {turn.attachmentName && (
+                            <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-mist">
+                              <FileText className="h-3 w-3" />
+                              {turn.attachmentName}
+                            </div>
+                          )}
+                          <div className="rounded-2xl rounded-tr-sm bg-surface px-4 py-2.5 text-[15px] text-paper">
+                            {turn.prompt}
+                          </div>
+                        </div>
+                      </div>
+                      <AnswerBubble
+                        best={turn.best}
+                        pending={isLastPending && !turn.best}
+                        pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
+                        regenerating={regeneratingIndex === i}
+                        onRegenerate={
+                          turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
+                        }
+                        pinned={!!turn.pinned}
+                        onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
+                        shouldType={!!turn.best && !alreadyShownRef.current.has(i)}
+                        onTypingDone={() => {
+                          alreadyShownRef.current.add(i);
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+                <div ref={bottomRef} />
               </div>
             </div>
-          )}
 
-          <div className="mx-auto max-w-3xl space-y-7">
-            {turns.map((turn, i) => {
-              const isLastPending = pending && i === turns.length - 1;
-
-              return (
-                <div
-                  key={i}
-                  ref={(el) => (turnRefs.current[i] = el)}
-                  className="animate-rise scroll-mt-20 space-y-3"
-                >
-                  <div className="flex justify-end">
-                    <div className="flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-[75%]">
-                      {turn.attachmentName && (
-                        <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-mist">
-                          <FileText className="h-3 w-3" />
-                          {turn.attachmentName}
-                        </div>
-                      )}
-                      <div className="rounded-2xl rounded-tr-sm bg-signal/10 px-4 py-2.5 text-sm text-paper">
-                        {turn.prompt}
-                      </div>
-                    </div>
-                  </div>
-                  <AnswerBubble
-                    best={turn.best}
-                    pending={isLastPending && !turn.best}
-                    pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
-                    regenerating={regeneratingIndex === i}
-                    onRegenerate={
-                      turn.best && regeneratingIndex === null ? () => handleRegenerate(i) : null
-                    }
-                    pinned={!!turn.pinned}
-                    onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
-                    shouldType={!!turn.best && !alreadyShownRef.current.has(i)}
-                    onTypingDone={() => {
-                      alreadyShownRef.current.add(i);
-                    }}
-                  />
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </div>
-        </div>
-
-        <div className="border-t border-line bg-ink/95 p-3 backdrop-blur sm:p-5">
-          <div className="mx-auto max-w-3xl">
-            {attachment && (
-              <div className="mb-2 flex w-fit items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-paper">
-                <FileText className="h-3.5 w-3.5 text-signal" />
-                {attachment.name}
-                <button
-                  onClick={removeAttachment}
-                  className="text-mist transition hover:text-paper"
-                  aria-label="Remove attachment"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            <form
-              onSubmit={handleSend}
-              className="flex items-end gap-2.5 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/20 transition focus-within:border-signal/60 focus-within:shadow-signal/10"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ATTACHMENT_ACCEPT}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={imageMode}
-                className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-mist transition hover:bg-surface2 hover:text-paper disabled:opacity-30"
-                title="Attach a code/text file"
-                aria-label="Attach file"
-              >
-                <Paperclip className="h-4 w-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setImageMode((v) => !v)}
-                className={`mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
-                  imageMode
-                    ? "bg-signal/15 text-signal"
-                    : "text-mist hover:bg-surface2 hover:text-paper"
-                }`}
-                title={imageMode ? "Image mode on — click to switch back to chat" : "Generate an image instead"}
-                aria-label="Toggle image generation mode"
-              >
-                <ImageIcon className="h-4 w-4" />
-              </button>
-
-              <textarea
-                ref={textareaRef}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend(e);
-                  }
-                }}
-                rows={1}
-                placeholder={imageMode ? "Describe an image to generate…" : "Message MultiMind…"}
-                className="scrollbar-thin max-h-40 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-paper outline-none placeholder:text-mist/60"
-              />
-              <button
-                type="submit"
-                disabled={pending || (!prompt.trim() && !attachment)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-signal text-ink transition-all hover:brightness-110 hover:shadow-md hover:shadow-signal/30 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:brightness-100 disabled:hover:shadow-none"
-                aria-label="Send"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </form>
-            {imageMode && (
-              <p className="mt-1.5 px-1 text-[11px] text-mist/60">
-                Image mode is on — your next message will generate an image instead of a chat reply.
-              </p>
-            )}
-            {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-          </div>
-        </div>
+            <div className="px-4 pb-5 pt-2 sm:px-8">{inputBar}</div>
+          </>
+        )}
       </div>
 
       {/* Right panel — outline + pinned answers */}
@@ -556,7 +577,7 @@ export default function ChatDashboard({ user }) {
         />
       )}
       <aside
-        className={`fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] transform border-l border-line bg-surface transition-transform duration-200 ${
+        className={`fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] transform border-l border-line bg-ink transition-transform duration-200 ${
           outlineOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

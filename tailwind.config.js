@@ -22,6 +22,7 @@ module.exports = {
         display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       keyframes: {
         blink: {

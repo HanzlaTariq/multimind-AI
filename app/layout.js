@@ -1,4 +1,4 @@
-import { Space_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { getServerSession } from "next-auth";
@@ -22,6 +22,13 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["400", "500"],
+  style: ["italic", "normal"],
+});
+
 export const metadata = {
   title: "MultiMind — Three minds, one answer",
   description:
@@ -32,8 +39,11 @@ export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="overflow-x-hidden font-body antialiased">
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}
+    >
+      <body className="font-body antialiased">
         <Providers session={session}>{children}</Providers>
       </body>
     </html>
