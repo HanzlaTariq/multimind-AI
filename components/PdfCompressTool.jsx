@@ -77,7 +77,7 @@ export default function PdfCompressTool() {
   return (
     <div className="flex min-h-screen flex-col bg-ink">
       <header className="flex items-center gap-3 border-b border-line px-4 py-4 sm:px-8">
-        <Link href="/dashboard" className="text-mist transition hover:text-paper" aria-label="Back">
+        <Link href="/dashboard/document-tools" className="text-mist transition hover:text-paper" aria-label="Back">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <span className="font-display text-sm font-semibold text-paper">Compress PDF</span>

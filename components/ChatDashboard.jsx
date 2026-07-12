@@ -399,13 +399,13 @@ export default function ChatDashboard({ user }) {
           </button>
 
           <Link
-            href="/dashboard/pdf-tools"
+            href="/dashboard/document-tools"
             className="mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
               <FileDown className="h-3.5 w-3.5" />
             </span>
-            Compress PDF
+            Document Tools
           </Link>
 
           <div className="mb-1 mt-2 px-2.5 text-xs font-medium text-mist/60">Recents</div>
