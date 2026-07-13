@@ -21,6 +21,9 @@ export default async function ConvertDocumentPage() {
         { value: "odt", label: "ODT" },
       ]}
       maxSizeLabel="20MB"
+      toolId="convert-document"
+      toolLabel="Convert Document"
+      toolHref="/dashboard/document-tools/convert-document"
     />
   );
 }

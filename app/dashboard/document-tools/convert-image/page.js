@@ -23,6 +23,9 @@ export default async function ConvertImagePage() {
       extraFieldName="width"
       extraFieldLabel="Resize width in px (optional)"
       maxSizeLabel="15MB"
+      toolId="convert-image"
+      toolLabel="Convert Image"
+      toolHref="/dashboard/document-tools/convert-image"
     />
   );
 }

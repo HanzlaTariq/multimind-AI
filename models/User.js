@@ -33,6 +33,15 @@ const UserSchema = new mongoose.Schema(
       enum: ["free", "pro"],
       default: "free",
     },
+    recentTools: [
+      {
+        toolId: { type: String, required: true },
+        label: { type: String, required: true },
+        href: { type: String, required: true },
+        lastUsedAt: { type: Date, default: Date.now },
+        _id: false,
+      },
+    ],
   },
   { timestamps: true }
 );

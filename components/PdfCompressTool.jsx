@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, UploadCloud, FileText, Download, Loader2, AlertTriangle } from "lucide-react";
+import { useTrackTool } from "@/lib/useTrackTool";
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -10,21 +11,21 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+const ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.docx,.pptx,.xlsx";
+
 export default function PdfCompressTool() {
+  useTrackTool("compress-pdf", "Compress File", "/dashboard/document-tools/compress-pdf");
+
   const [file, setFile] = useState(null);
-  const [status, setStatus] = useState("idle"); // idle | working | done | error
+  const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-  const [result, setResult] = useState(null); // { url, originalSize, compressedSize, savedPercent, filename }
+  const [result, setResult] = useState(null);
   const fileInputRef = useRef(null);
 
   function handleFileSelect(e) {
     const selected = e.target.files?.[0];
     e.target.value = "";
     if (!selected) return;
-    if (selected.type !== "application/pdf") {
-      setError("Please select a PDF file.");
-      return;
-    }
     setFile(selected);
     setResult(null);
     setError("");
@@ -77,25 +78,34 @@ export default function PdfCompressTool() {
   return (
     <div className="flex min-h-screen flex-col bg-ink">
       <header className="flex items-center gap-3 border-b border-line px-4 py-4 sm:px-8">
-        <Link href="/dashboard/document-tools" className="text-mist transition hover:text-paper" aria-label="Back">
+        <Link
+          href="/dashboard/document-tools"
+          className="text-mist transition hover:text-paper"
+          aria-label="Back"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <span className="font-display text-sm font-semibold text-paper">Compress PDF</span>
+        <span className="font-display text-sm font-semibold text-paper">Compress File</span>
       </header>
 
       <div className="mx-auto w-full max-w-xl flex-1 px-4 py-10 sm:px-0">
-        <h1 className="font-display text-2xl font-semibold text-paper">Shrink a PDF's file size</h1>
-        <p className="mt-2 text-sm text-mist">
-          Uploads a PDF and rewrites its internal structure to remove duplicate/unused data. Works
-          best on text-heavy PDFs — image-heavy files will shrink less, since we don't re-encode
-          embedded images.
+        <div className="mb-2 flex items-center gap-2">
+          <h1 className="font-display text-2xl font-semibold text-paper">Compress File</h1>
+          <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
+            Free • Instant
+          </span>
+        </div>
+        <p className="text-sm text-mist">
+          Shrink a PDF, image (JPG/PNG/WebP), or Office document (DOCX/PPTX/XLSX). Images inside
+          Office files are recompressed, PDFs are restructured, and photos are re-encoded at a
+          slightly lower quality — kept minimal to avoid visible loss.
         </p>
 
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface p-8 text-center">
           <input
             ref={fileInputRef}
             type="file"
-            accept="application/pdf"
+            accept={ACCEPT}
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -106,8 +116,8 @@ export default function PdfCompressTool() {
               className="flex w-full flex-col items-center gap-3 text-mist transition hover:text-paper"
             >
               <UploadCloud className="h-8 w-8" />
-              <span className="text-sm">Click to choose a PDF file</span>
-              <span className="text-xs text-mist/60">Max 15MB</span>
+              <span className="text-sm">Click to choose a file</span>
+              <span className="text-xs text-mist/60">PDF, image, or Office doc — max 20MB</span>
             </button>
           )}
 
@@ -126,7 +136,7 @@ export default function PdfCompressTool() {
                   className="mt-2 flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
                 >
                   {status === "working" && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {status === "working" ? "Compressing…" : "Compress PDF"}
+                  {status === "working" ? "Compressing…" : "Compress File"}
                 </button>
               )}
 
@@ -165,7 +175,7 @@ export default function PdfCompressTool() {
               className="mt-5 flex items-center justify-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110"
             >
               <Download className="h-4 w-4" />
-              Download compressed PDF
+              Download compressed file
             </a>
           </div>
         )}

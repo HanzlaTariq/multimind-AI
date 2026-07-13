@@ -2,17 +2,32 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { FileDown, Image as ImageIcon, Sheet, FileType, ArrowLeft } from "lucide-react";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
+import {
+  FileDown,
+  Image as ImageIcon,
+  Sheet,
+  FileType,
+  ArrowLeft,
+  Combine,
+  Scissors,
+  Images,
+  FileImage,
+  Clock,
+} from "lucide-react";
 
 const TOOLS = [
   {
+    id: "compress-pdf",
     href: "/dashboard/document-tools/compress-pdf",
     icon: FileDown,
-    title: "Compress PDF",
-    desc: "Shrink a PDF's file size",
+    title: "Compress File",
+    desc: "Shrink a PDF, image, or Office doc",
     badge: "Free",
   },
   {
+    id: "convert-image",
     href: "/dashboard/document-tools/convert-image",
     icon: ImageIcon,
     title: "Convert Image",
@@ -20,6 +35,7 @@ const TOOLS = [
     badge: "Free",
   },
   {
+    id: "convert-spreadsheet",
     href: "/dashboard/document-tools/convert-spreadsheet",
     icon: Sheet,
     title: "Convert Spreadsheet",
@@ -27,17 +43,56 @@ const TOOLS = [
     badge: "Free",
   },
   {
+    id: "convert-document",
     href: "/dashboard/document-tools/convert-document",
     icon: FileType,
     title: "Convert Document",
     desc: "Word, PDF, PowerPoint — any to any",
     badge: "Premium",
   },
+  {
+    id: "merge-pdf",
+    href: "/dashboard/document-tools/merge-pdf",
+    icon: Combine,
+    title: "Merge PDFs",
+    desc: "Combine multiple PDFs into one",
+    badge: "Free",
+  },
+  {
+    id: "split-pdf",
+    href: "/dashboard/document-tools/split-pdf",
+    icon: Scissors,
+    title: "Split PDF",
+    desc: "Pull a page range into a new PDF",
+    badge: "Free",
+  },
+  {
+    id: "images-to-pdf",
+    href: "/dashboard/document-tools/images-to-pdf",
+    icon: Images,
+    title: "Images to PDF",
+    desc: "Combine photos into a single PDF",
+    badge: "Free",
+  },
+  {
+    id: "pdf-to-images",
+    href: "/dashboard/document-tools/pdf-to-images",
+    icon: FileImage,
+    title: "PDF to Images",
+    desc: "Export each page as an image",
+    badge: "Premium",
+  },
 ];
+
+const ICON_BY_ID = Object.fromEntries(TOOLS.map((t) => [t.id, t.icon]));
 
 export default async function DocumentToolsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
+
+  await dbConnect();
+  const user = await User.findById(session.user.id).select("recentTools").lean();
+  const recentTools = user?.recentTools || [];
 
   return (
     <div className="min-h-screen bg-ink px-4 py-10 sm:px-8">
@@ -52,10 +107,39 @@ export default async function DocumentToolsPage() {
         <h1 className="mt-4 font-display text-3xl font-semibold text-paper">Document Tools</h1>
         <p className="mt-2 text-sm text-mist">Everything you need for your files, in one place.</p>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        {recentTools.length > 0 && (
+          <>
+            <div className="mt-8 flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-mist/50">
+              <Clock className="h-3 w-3" />
+              Recent
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {recentTools.map((t) => {
+                const Icon = ICON_BY_ID[t.toolId] || FileType;
+                return (
+                  <Link
+                    key={t.toolId}
+                    href={t.href}
+                    className="flex items-center gap-3 rounded-xl border border-line bg-surface/60 px-4 py-3 transition hover:border-signal/40 hover:bg-surface2"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal/10 text-signal">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="truncate text-sm text-paper">{t.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        <div className="mt-8 text-xs font-medium uppercase tracking-widest text-mist/50">
+          All tools
+        </div>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
           {TOOLS.map((t) => (
             <Link
-              key={t.href}
+              key={t.id}
               href={t.href}
               className="group flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5 transition hover:border-signal/40 hover:bg-surface2"
             >

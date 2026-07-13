@@ -11,25 +11,12 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export default function DocumentConvertTool({
-  title,
-  description,
-  badge,
-  accept,
-  targetFormats,
-  endpoint,
-  extraFieldLabel,
-  extraFieldName,
-  maxSizeLabel = "15MB",
-  toolId,
-  toolLabel,
-  toolHref,
-}) {
-  useTrackTool(toolId, toolLabel || title, toolHref);
+export default function SplitPdfTool() {
+  useTrackTool("split-pdf", "Split PDF", "/dashboard/document-tools/split-pdf");
 
   const [file, setFile] = useState(null);
-  const [targetFormat, setTargetFormat] = useState(targetFormats[0]?.value || "");
-  const [extraValue, setExtraValue] = useState("");
+  const [from, setFrom] = useState("1");
+  const [to, setTo] = useState("1");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
@@ -45,7 +32,7 @@ export default function DocumentConvertTool({
     setStatus("idle");
   }
 
-  async function handleConvert() {
+  async function handleSplit() {
     if (!file) return;
     setStatus("working");
     setError("");
@@ -53,26 +40,20 @@ export default function DocumentConvertTool({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("format", targetFormat);
-      if (extraFieldName && extraValue) formData.append(extraFieldName, extraValue);
+      formData.append("from", from);
+      formData.append("to", to);
 
-      const res = await fetch(endpoint, { method: "POST", body: formData });
-      const contentType = res.headers.get("Content-Type") || "";
+      const res = await fetch("/api/pdf/split", { method: "POST", body: formData });
 
       if (!res.ok) {
-        const data = contentType.includes("application/json") ? await res.json() : {};
-        throw new Error(data.error || "Conversion failed");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Split failed");
       }
 
-      if (contentType.includes("application/json")) {
-        const data = await res.json();
-        setResult({ url: data.downloadUrl, filename: data.filename, external: true });
-      } else {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const baseName = file.name.replace(/\.[^.]+$/, "");
-        setResult({ url, filename: `${baseName}.${targetFormat}`, external: false });
-      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const baseName = file.name.replace(/\.[^.]+$/, "");
+      setResult({ url, filename: `${baseName}-pages-${from}-${to}.pdf` });
       setStatus("done");
     } catch (err) {
       setError(err.message || "Something went wrong");
@@ -97,41 +78,37 @@ export default function DocumentConvertTool({
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <span className="font-display text-sm font-semibold text-paper">{title}</span>
+        <span className="font-display text-sm font-semibold text-paper">Split PDF</span>
       </header>
 
       <div className="mx-auto w-full max-w-xl flex-1 px-4 py-10 sm:px-0">
         <div className="mb-2 flex items-center gap-2">
-          <h1 className="font-display text-2xl font-semibold text-paper">{title}</h1>
-          {badge && (
-            <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-              {badge}
-            </span>
-          )}
+          <h1 className="font-display text-2xl font-semibold text-paper">Split PDF</h1>
+          <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
+            Free • Instant
+          </span>
         </div>
-        <p className="text-sm text-mist">{description}</p>
+        <p className="text-sm text-mist">Pull a page range out of a PDF into its own file.</p>
 
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-surface p-8 text-center">
           <input
             ref={fileInputRef}
             type="file"
-            accept={accept}
+            accept="application/pdf"
             onChange={handleFileSelect}
             className="hidden"
           />
 
-          {!file && (
+          {!file ? (
             <button
               onClick={() => fileInputRef.current?.click()}
               className="flex w-full flex-col items-center gap-3 text-mist transition hover:text-paper"
             >
               <UploadCloud className="h-8 w-8" />
-              <span className="text-sm">Click to choose a file</span>
-              <span className="text-xs text-mist/60">Max {maxSizeLabel}</span>
+              <span className="text-sm">Click to choose a PDF</span>
+              <span className="text-xs text-mist/60">Max 20MB</span>
             </button>
-          )}
-
-          {file && (
+          ) : (
             <div className="flex flex-col items-center gap-3">
               <FileText className="h-8 w-8 text-signal" />
               <div>
@@ -141,39 +118,36 @@ export default function DocumentConvertTool({
 
               {status !== "done" && (
                 <>
-                  <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                    {targetFormats.map((f) => (
-                      <button
-                        key={f.value}
-                        onClick={() => setTargetFormat(f.value)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                          targetFormat === f.value
-                            ? "border-signal bg-signal/10 text-signal"
-                            : "border-line text-mist hover:text-paper"
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
+                  <div className="mt-2 flex items-center justify-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-mist">From page</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={from}
+                        onChange={(e) => setFrom(e.target.value)}
+                        className="w-16 rounded-lg border border-line bg-ink px-2 py-1.5 text-center text-sm text-paper outline-none focus:border-signal"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-mist">to</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={to}
+                        onChange={(e) => setTo(e.target.value)}
+                        className="w-16 rounded-lg border border-line bg-ink px-2 py-1.5 text-center text-sm text-paper outline-none focus:border-signal"
+                      />
+                    </div>
                   </div>
 
-                  {extraFieldName && (
-                    <input
-                      type="number"
-                      value={extraValue}
-                      onChange={(e) => setExtraValue(e.target.value)}
-                      placeholder={extraFieldLabel}
-                      className="mt-2 w-56 rounded-lg border border-line bg-ink px-3 py-2 text-center text-sm text-paper outline-none focus:border-signal"
-                    />
-                  )}
-
                   <button
-                    onClick={handleConvert}
+                    onClick={handleSplit}
                     disabled={status === "working"}
-                    className="mt-3 flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
+                    className="mt-2 flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
                   >
                     {status === "working" && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {status === "working" ? "Converting…" : "Convert"}
+                    {status === "working" ? "Splitting…" : "Split PDF"}
                   </button>
                 </>
               )}
@@ -194,12 +168,10 @@ export default function DocumentConvertTool({
 
         {result && (
           <div className="mt-6 rounded-2xl border border-signal/30 bg-signal/5 p-6 text-center">
-            <p className="text-sm text-paper">Your file is ready</p>
+            <p className="text-sm text-paper">Your PDF is ready</p>
             <a
               href={result.url}
-              download={result.external ? undefined : result.filename}
-              target={result.external ? "_blank" : undefined}
-              rel={result.external ? "noreferrer" : undefined}
+              download={result.filename}
               className="mt-4 flex items-center justify-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110"
             >
               <Download className="h-4 w-4" />

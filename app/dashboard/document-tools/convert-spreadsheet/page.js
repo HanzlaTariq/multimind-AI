@@ -20,6 +20,9 @@ export default async function ConvertSpreadsheetPage() {
         { value: "ods", label: "ODS" },
       ]}
       maxSizeLabel="15MB"
+      toolId="convert-spreadsheet"
+      toolLabel="Convert Spreadsheet"
+      toolHref="/dashboard/document-tools/convert-spreadsheet"
     />
   );
 }
