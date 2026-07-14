@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
+import User from "@/models/User";
 
-const SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot.
+const BASE_SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot.
 
 Rules:
 - Reply in the same language and script the user used (English, Roman Urdu/Hindi, Urdu script, etc). If the user writes in Roman Urdu/Hinglish, understand it as natural conversational language rather than parsing words as literal English terms or names (e.g. "kia hall ha" / "kya haal hai" means "how are you", not a person's name).
@@ -14,9 +15,22 @@ Rules:
 - When explaining a process, flow, architecture, hierarchy, or relationship between steps/entities, include a Mermaid diagram in a \`\`\`mermaid code block if it would genuinely help understanding — don't force one into purely conversational or simple factual answers.
 - Be concise. Avoid unnecessary preamble.`;
 
+function buildSystemPrompt(profile) {
+  if (!profile) return BASE_SYSTEM_PROMPT;
+
+  const lines = [];
+  if (profile.preferredName) lines.push(`The user's preferred name is "${profile.preferredName}" — address them by it when it feels natural.`);
+  if (profile.role) lines.push(`The user's background: ${profile.role}. Calibrate technical depth accordingly.`);
+  if (profile.customInstructions) lines.push(`Additional instructions from the user: ${profile.customInstructions}`);
+
+  if (lines.length === 0) return BASE_SYSTEM_PROMPT;
+
+  return `${BASE_SYSTEM_PROMPT}\n\nPersonalization for this user:\n${lines.join("\n")}`;
+}
+
 // history: array of { prompt, answer } from earlier turns in this conversation
 
-async function callGemini(prompt, history) {
+async function callGemini(prompt, history, systemPrompt) {
   const start = Date.now();
   try {
     const contents = [];
@@ -32,7 +46,7 @@ async function callGemini(prompt, history) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          systemInstruction: { parts: [{ text: systemPrompt }] },
           contents,
         }),
       }
@@ -51,10 +65,10 @@ async function callGemini(prompt, history) {
   }
 }
 
-async function callGroq(prompt, history) {
+async function callGroq(prompt, history, systemPrompt) {
   const start = Date.now();
   try {
-    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    const messages = [{ role: "system", content: systemPrompt }];
     for (const h of history) {
       messages.push({ role: "user", content: h.prompt });
       if (h.answer) messages.push({ role: "assistant", content: h.answer });
@@ -86,10 +100,10 @@ async function callGroq(prompt, history) {
   }
 }
 
-async function callDeepSeek(prompt, history) {
+async function callDeepSeek(prompt, history, systemPrompt) {
   const start = Date.now();
   try {
-    const messages = [{ role: "system", content: SYSTEM_PROMPT }];
+    const messages = [{ role: "system", content: systemPrompt }];
     for (const h of history) {
       messages.push({ role: "user", content: h.prompt });
       if (h.answer) messages.push({ role: "assistant", content: h.answer });
@@ -190,6 +204,11 @@ export async function POST(req) {
 
   await dbConnect();
 
+  const userProfile = await User.findById(session.user.id).select(
+    "preferredName role customInstructions"
+  );
+  const systemPrompt = buildSystemPrompt(userProfile);
+
   // Load prior turns from this conversation so the models have memory of it
   let history = [];
   let existingConversation = null;
@@ -211,9 +230,9 @@ export async function POST(req) {
   const effectivePrompt = buildEffectivePrompt(prompt, attachment);
 
   const [gemini, groq, deepseek] = await Promise.all([
-    callGemini(effectivePrompt, trimmedHistory),
-    callGroq(effectivePrompt, trimmedHistory),
-    callDeepSeek(effectivePrompt, trimmedHistory),
+    callGemini(effectivePrompt, trimmedHistory, systemPrompt),
+    callGroq(effectivePrompt, trimmedHistory, systemPrompt),
+    callDeepSeek(effectivePrompt, trimmedHistory, systemPrompt),
   ]);
 
   const all = [gemini, groq, deepseek];

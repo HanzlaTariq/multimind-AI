@@ -42,6 +42,24 @@ const UserSchema = new mongoose.Schema(
         _id: false,
       },
     ],
+
+    // Profile
+    preferredName: { type: String, default: "", trim: true },
+    role: { type: String, default: "", trim: true },
+    customInstructions: { type: String, default: "", maxlength: 2000 },
+
+    // Preferences
+    chatFont: {
+      type: String,
+      enum: ["sans", "serif", "mono"],
+      default: "sans",
+    },
+    reduceMotion: { type: Boolean, default: false },
+    notifyOnComplete: { type: Boolean, default: false },
+
+    // Billing (Stripe)
+    stripeCustomerId: { type: String, default: "" },
+    stripeSubscriptionId: { type: String, default: "" },
   },
   { timestamps: true }
 );

@@ -21,9 +21,11 @@ import {
   Image as ImageIcon,
   FileText,
   FileDown,
+  Settings as SettingsIcon,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
 import { exportConversationToPdf } from "@/lib/pdfExport";
+import { useSettings } from "@/lib/SettingsContext";
 
 const MAX_ATTACHMENT_BYTES = 150 * 1024;
 const ATTACHMENT_ACCEPT =
@@ -41,6 +43,7 @@ function firstName(name) {
 }
 
 export default function ChatDashboard({ user }) {
+  const { settings } = useSettings();
   const [conversations, setConversations] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [turns, setTurns] = useState([]);
@@ -183,6 +186,15 @@ export default function ChatDashboard({ user }) {
       setConversationId(data.conversationId);
       setTurns((prev) => [...prev.slice(0, -1), data.turn]);
       fetchConversations();
+
+      if (
+        settings.notifyOnComplete &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted" &&
+        document.visibilityState !== "visible"
+      ) {
+        new Notification("MultiMind", { body: "Your response is ready." });
+      }
     } catch (err) {
       setError("Network error — please try again");
       setTurns((prev) => prev.slice(0, -1));
@@ -445,17 +457,29 @@ export default function ChatDashboard({ user }) {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm text-paper">{user?.name}</p>
-                <p className="text-xs text-mist/60">Free plan</p>
+                <p className="text-xs text-mist/60">
+                  {settings.plan === "pro" ? "Pro plan" : "Free plan"}
+                </p>
               </div>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: "/" })}
-              className="shrink-0 rounded-lg p-1.5 text-mist transition hover:bg-surface2 hover:text-paper"
-              aria-label="Log out"
-              title="Log out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            <div className="flex shrink-0 items-center gap-1">
+              <Link
+                href="/dashboard/settings"
+                className="rounded-lg p-1.5 text-mist transition hover:bg-surface2 hover:text-paper"
+                aria-label="Settings"
+                title="Settings"
+              >
+                <SettingsIcon className="h-4 w-4" />
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="rounded-lg p-1.5 text-mist transition hover:bg-surface2 hover:text-paper"
+                aria-label="Log out"
+                title="Log out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -521,12 +545,18 @@ export default function ChatDashboard({ user }) {
               <div className="mx-auto max-w-2xl space-y-8">
                 {turns.map((turn, i) => {
                   const isLastPending = pending && i === turns.length - 1;
+                  const fontClass =
+                    settings.chatFont === "serif"
+                      ? "font-serif"
+                      : settings.chatFont === "mono"
+                      ? "font-mono"
+                      : "";
 
                   return (
                     <div
                       key={i}
                       ref={(el) => (turnRefs.current[i] = el)}
-                      className="animate-rise scroll-mt-20 space-y-3"
+                      className={`${settings.reduceMotion ? "" : "animate-rise"} scroll-mt-20 space-y-3`}
                     >
                       <div className="flex justify-end">
                         <div className="flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-[75%]">
@@ -536,7 +566,9 @@ export default function ChatDashboard({ user }) {
                               {turn.attachmentName}
                             </div>
                           )}
-                          <div className="rounded-2xl rounded-tr-sm bg-surface px-4 py-2.5 text-[15px] text-paper">
+                          <div
+                            className={`rounded-2xl rounded-tr-sm bg-surface px-4 py-2.5 text-[15px] text-paper ${fontClass}`}
+                          >
                             {turn.prompt}
                           </div>
                         </div>
@@ -551,10 +583,13 @@ export default function ChatDashboard({ user }) {
                         }
                         pinned={!!turn.pinned}
                         onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
-                        shouldType={!!turn.best && !alreadyShownRef.current.has(i)}
+                        shouldType={
+                          !!turn.best && !alreadyShownRef.current.has(i) && !settings.reduceMotion
+                        }
                         onTypingDone={() => {
                           alreadyShownRef.current.add(i);
                         }}
+                        fontClass={fontClass}
                       />
                     </div>
                   );

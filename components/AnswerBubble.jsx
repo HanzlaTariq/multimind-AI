@@ -81,6 +81,7 @@ export default function AnswerBubble({
   onTogglePin,
   shouldType,
   onTypingDone,
+  fontClass = "",
 }) {
   const [copied, setCopied] = useState(false);
   const [visibleChars, setVisibleChars] = useState(
@@ -235,7 +236,7 @@ export default function AnswerBubble({
           </div>
         )}
         <div
-          className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${
+          className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${fontClass} ${
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
