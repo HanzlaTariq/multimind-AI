@@ -196,7 +196,7 @@ export async function POST(req) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { prompt, conversationId, attachment } = await req.json();
+  const { prompt, conversationId, attachment, temporary, clientHistory } = await req.json();
 
   if ((!prompt || !prompt.trim()) && !attachment?.content) {
     return Response.json({ error: "Prompt cannot be empty" }, { status: 400 });
@@ -209,10 +209,15 @@ export async function POST(req) {
   );
   const systemPrompt = buildSystemPrompt(userProfile);
 
-  // Load prior turns from this conversation so the models have memory of it
+  // Load prior turns so the models have memory of this conversation. In
+  // temporary mode nothing is persisted, so history comes from the client
+  // instead of the database.
   let history = [];
   let existingConversation = null;
-  if (conversationId) {
+
+  if (temporary) {
+    history = Array.isArray(clientHistory) ? clientHistory : [];
+  } else if (conversationId) {
     existingConversation = await Conversation.findOne({
       _id: conversationId,
       user: session.user.id,
@@ -259,6 +264,10 @@ export async function POST(req) {
     best,
     createdAt: new Date(),
   };
+
+  if (temporary) {
+    return Response.json({ conversationId: null, turn, temporary: true });
+  }
 
   let conversation = existingConversation;
   if (conversation) {

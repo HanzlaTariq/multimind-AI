@@ -22,6 +22,7 @@ import {
   FileText,
   FileDown,
   Settings as SettingsIcon,
+  EyeOff,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
 import { exportConversationToPdf } from "@/lib/pdfExport";
@@ -56,6 +57,7 @@ export default function ChatDashboard({ user }) {
   const [error, setError] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [imageMode, setImageMode] = useState(false);
+  const [temporaryMode, setTemporaryMode] = useState(false);
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const turnRefs = useRef([]);
@@ -108,6 +110,11 @@ export default function ChatDashboard({ user }) {
     setAttachment(null);
     setImageMode(false);
     setSidebarOpen(false);
+  }
+
+  function handleToggleTemporary() {
+    startNewChat();
+    setTemporaryMode((v) => !v);
   }
 
   function handleFileChange(e) {
@@ -167,7 +174,15 @@ export default function ChatDashboard({ user }) {
       const endpoint = useImageMode ? "/api/image" : "/api/chat";
       const body = useImageMode
         ? { prompt: text, conversationId }
-        : { prompt: text, conversationId, attachment: useAttachment };
+        : {
+            prompt: text,
+            conversationId,
+            attachment: useAttachment,
+            temporary: temporaryMode,
+            clientHistory: temporaryMode
+              ? turns.map((t) => ({ prompt: t.prompt, answer: t.best?.text || "" }))
+              : undefined,
+          };
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -185,7 +200,7 @@ export default function ChatDashboard({ user }) {
 
       setConversationId(data.conversationId);
       setTurns((prev) => [...prev.slice(0, -1), data.turn]);
-      fetchConversations();
+      if (!temporaryMode) fetchConversations();
 
       if (
         settings.notifyOnComplete &&
@@ -225,10 +240,21 @@ export default function ChatDashboard({ user }) {
 
     try {
       const endpoint = isImageTurn ? "/api/image" : "/api/chat";
+      const body = isImageTurn
+        ? { prompt: turn.prompt, conversationId }
+        : {
+            prompt: turn.prompt,
+            conversationId,
+            temporary: temporaryMode,
+            clientHistory: temporaryMode
+              ? turns.slice(0, index).map((t) => ({ prompt: t.prompt, answer: t.best?.text || "" }))
+              : undefined,
+          };
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: turn.prompt, conversationId }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
@@ -239,7 +265,7 @@ export default function ChatDashboard({ user }) {
 
       setTurns((prev) => prev.map((t, i) => (i === index ? data.turn : t)));
       alreadyShownRef.current.delete(index);
-      fetchConversations();
+      if (!temporaryMode) fetchConversations();
     } catch (err) {
       setError("Network error — please try again");
     } finally {
@@ -501,6 +527,22 @@ export default function ChatDashboard({ user }) {
           <span className="font-display text-sm font-semibold text-paper lg:hidden">MultiMind</span>
 
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={handleToggleTemporary}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition ${
+                temporaryMode
+                  ? "border-signal/50 bg-signal/10 text-signal"
+                  : "border-line text-mist hover:border-mist/40 hover:text-paper"
+              }`}
+              title={
+                temporaryMode
+                  ? "Temporary Chat is on — click to turn off"
+                  : "Start a Temporary Chat — won't be saved to history"
+              }
+            >
+              <EyeOff className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Temporary</span>
+            </button>
             {!isEmpty && (
               <>
                 <button
@@ -528,6 +570,13 @@ export default function ChatDashboard({ user }) {
             )}
           </div>
         </header>
+
+        {temporaryMode && (
+          <div className="flex items-center justify-center gap-1.5 border-b border-signal/20 bg-signal/5 px-4 py-2 text-center text-xs text-signal">
+            <EyeOff className="h-3.5 w-3.5 shrink-0" />
+            Temporary Chat — this conversation won't be saved to your history.
+          </div>
+        )}
 
         {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center px-4 pb-24">
@@ -575,6 +624,7 @@ export default function ChatDashboard({ user }) {
                       </div>
                       <AnswerBubble
                         best={turn.best}
+                        responses={turn.responses}
                         pending={isLastPending && !turn.best}
                         pendingLabel={turn._pendingType === "image" ? "Generating image…" : undefined}
                         regenerating={regeneratingIndex === i}

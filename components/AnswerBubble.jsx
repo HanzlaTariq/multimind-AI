@@ -11,6 +11,10 @@ import {
   PinOff,
   Download,
   FileDown,
+  ChevronDown,
+  Zap,
+  Layers,
+  Brain,
 } from "lucide-react";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import { exportTextToPdf } from "@/lib/pdfExport";
@@ -20,6 +24,13 @@ const MODEL_LABEL = {
   groq: "Groq",
   deepseek: "DeepSeek",
   multimind: "MultiMind",
+};
+
+const MODEL_ICON = {
+  gemini: Layers,
+  groq: Zap,
+  deepseek: Brain,
+  multimind: Sparkles,
 };
 
 function CodeBlock({ inline, className, children, ...props }) {
@@ -71,8 +82,78 @@ function CodeBlock({ inline, className, children, ...props }) {
   );
 }
 
+function ModelDropdown({ options, selectedModel, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const currentLabel = selectedModel ? MODEL_LABEL[selectedModel] || selectedModel : "Best";
+  const CurrentIcon = selectedModel ? MODEL_ICON[selectedModel] || Sparkles : Sparkles;
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-full border border-line bg-surface2 px-2.5 py-1 text-[11px] font-medium text-paper transition hover:border-mist/40"
+      >
+        <CurrentIcon className="h-3 w-3 text-signal" />
+        {currentLabel}
+        <ChevronDown
+          className={`h-3 w-3 text-mist transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1.5 w-40 overflow-hidden rounded-lg border border-line bg-surface shadow-xl shadow-black/30">
+          <button
+            onClick={() => {
+              onSelect(null);
+              setOpen(false);
+            }}
+            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-surface2 ${
+              !selectedModel ? "text-signal" : "text-paper"
+            }`}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Best
+          </button>
+          <div className="h-px bg-line" />
+          {options.map((r) => {
+            const Icon = MODEL_ICON[r.model] || Sparkles;
+            return (
+              <button
+                key={r.model}
+                onClick={() => {
+                  onSelect(r.model);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-surface2 ${
+                  selectedModel === r.model ? "text-signal" : "text-paper"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {MODEL_LABEL[r.model] || r.model}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnswerBubble({
   best,
+  responses = [],
   pending,
   pendingLabel,
   onRegenerate,
@@ -84,16 +165,17 @@ export default function AnswerBubble({
   fontClass = "",
 }) {
   const [copied, setCopied] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(null); // null = "Best"
   const [visibleChars, setVisibleChars] = useState(
     shouldType && best?.text ? 0 : best?.text?.length || 0
   );
   const typedForRef = useRef(null);
 
+  // Typewriter only ever animates the "Best" answer — switching the dropdown
+  // to a specific model shows its full text immediately, no re-typing.
   useEffect(() => {
     if (!best?.text) return;
 
-    // Already fully shown for this exact text (e.g. loaded from history, or
-    // already finished typing) — don't restart.
     if (!shouldType || typedForRef.current === best.text) {
       setVisibleChars(best.text.length);
       return;
@@ -103,8 +185,6 @@ export default function AnswerBubble({
     setVisibleChars(0);
 
     const total = best.text.length;
-    // Scale speed so very long answers don't take forever, but short ones
-    // still feel like they're being typed rather than instant.
     const step = Math.max(1, Math.round(total / 120));
     const intervalMs = 12;
 
@@ -124,22 +204,6 @@ export default function AnswerBubble({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [best?.text, shouldType]);
 
-  async function handleCopy() {
-    if (!best?.text) return;
-    try {
-      await navigator.clipboard.writeText(best.text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
-      // clipboard may be unavailable — fail silently
-    }
-  }
-
-  function handleExportPdf() {
-    if (!best?.text) return;
-    exportTextToPdf(best.text, "multimind-answer.pdf");
-  }
-
   if (pending || regenerating) {
     return (
       <div className="max-w-2xl rounded-2xl border border-line bg-surface px-4 py-3.5 shadow-sm shadow-black/10">
@@ -155,8 +219,34 @@ export default function AnswerBubble({
 
   if (!best) return null;
 
-  const isError = best.status === "error";
-  const isImage = best.type === "image" && best.imageData && !isError;
+  const isImage = best.type === "image" && best.imageData && best.status !== "error";
+
+  const successfulOthers = (responses || []).filter(
+    (r) => r.status === "ok" && r.text && r.text.trim()
+  );
+  const hasAlternatives = successfulOthers.length > 1;
+
+  const activeResponse = selectedModel
+    ? successfulOthers.find((r) => r.model === selectedModel) || best
+    : best;
+  const isViewingBest = !selectedModel;
+  const isError = activeResponse.status === "error";
+
+  async function handleCopy() {
+    if (!activeResponse?.text) return;
+    try {
+      await navigator.clipboard.writeText(activeResponse.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (e) {
+      // clipboard may be unavailable — fail silently
+    }
+  }
+
+  function handleExportPdf() {
+    if (!activeResponse?.text) return;
+    exportTextToPdf(activeResponse.text, "multimind-answer.pdf");
+  }
 
   if (isImage) {
     return (
@@ -218,8 +308,21 @@ export default function AnswerBubble({
     );
   }
 
+  const shownText = isViewingBest ? activeResponse.text.slice(0, visibleChars) : activeResponse.text;
+  const stillTyping = isViewingBest && visibleChars < activeResponse.text.length;
+
   return (
     <div className="group max-w-2xl">
+      {hasAlternatives && (
+        <div className="mb-1.5">
+          <ModelDropdown
+            options={successfulOthers}
+            selectedModel={selectedModel}
+            onSelect={setSelectedModel}
+          />
+        </div>
+      )}
+
       <div
         className={`relative rounded-2xl border px-4 py-3.5 shadow-sm shadow-black/10 ${
           isError
@@ -240,20 +343,16 @@ export default function AnswerBubble({
             isError ? "text-red-300" : "text-paper/90"
           }`}
         >
-          <ReactMarkdown components={{ code: CodeBlock }}>
-            {best.text.slice(0, visibleChars)}
-          </ReactMarkdown>
-          {visibleChars < best.text.length && (
-            <span className="animate-blink text-signal">▍</span>
-          )}
+          <ReactMarkdown components={{ code: CodeBlock }}>{shownText}</ReactMarkdown>
+          {stillTyping && <span className="animate-blink text-signal">▍</span>}
         </div>
       </div>
 
-      {!isError && visibleChars >= best.text.length && (
+      {!isError && !stillTyping && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <div className="mr-2 flex items-center gap-1 text-[10px] text-mist/50">
             <Sparkles className="h-3 w-3" />
-            {MODEL_LABEL[best.model] || "MultiMind"}
+            {MODEL_LABEL[activeResponse.model] || "MultiMind"}
           </div>
           <button
             onClick={handleCopy}
