@@ -15,6 +15,8 @@ import {
   Zap,
   Layers,
   Brain,
+  Volume2,
+  Square,
 } from "lucide-react";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import { exportTextToPdf } from "@/lib/pdfExport";
@@ -166,10 +168,28 @@ export default function AnswerBubble({
 }) {
   const [copied, setCopied] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null); // null = "Best"
+  const [speaking, setSpeaking] = useState(false);
   const [visibleChars, setVisibleChars] = useState(
     shouldType && best?.text ? 0 : best?.text?.length || 0
   );
   const typedForRef = useRef(null);
+
+  // Stop any speech if the dropdown selection changes or the component unmounts
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModel]);
 
   // Typewriter only ever animates the "Best" answer — switching the dropdown
   // to a specific model shows its full text immediately, no re-typing.
@@ -246,6 +266,33 @@ export default function AnswerBubble({
   function handleExportPdf() {
     if (!activeResponse?.text) return;
     exportTextToPdf(activeResponse.text, "multimind-answer.pdf");
+  }
+
+  function stripForSpeech(text) {
+    return text
+      .replace(/```[\s\S]*?```/g, " Code block omitted. ")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  }
+
+  function handleReadAloud() {
+    if (typeof window === "undefined" || !window.speechSynthesis || !activeResponse?.text) return;
+
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(stripForSpeech(activeResponse.text));
+    utterance.onend = () => setSpeaking(false);
+    utterance.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+    setSpeaking(true);
   }
 
   if (isImage) {
@@ -349,7 +396,11 @@ export default function AnswerBubble({
       </div>
 
       {!isError && !stillTyping && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <div
+          className={`mt-1.5 flex flex-wrap items-center gap-1 transition-opacity focus-within:opacity-100 group-hover:opacity-100 ${
+            speaking ? "opacity-100" : "opacity-0"
+          }`}
+        >
           <div className="mr-2 flex items-center gap-1 text-[10px] text-mist/50">
             <Sparkles className="h-3 w-3" />
             {MODEL_LABEL[activeResponse.model] || "MultiMind"}
@@ -361,6 +412,16 @@ export default function AnswerBubble({
           >
             {copied ? <Check className="h-3.5 w-3.5 text-signal" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            onClick={handleReadAloud}
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition hover:bg-surface2 ${
+              speaking ? "text-signal" : "text-mist hover:text-paper"
+            }`}
+            title={speaking ? "Stop reading" : "Read aloud"}
+          >
+            {speaking ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+            {speaking ? "Stop" : "Read aloud"}
           </button>
           <button
             onClick={handleExportPdf}

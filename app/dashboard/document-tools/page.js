@@ -15,6 +15,7 @@ import {
   Images,
   FileImage,
   Clock,
+  Mic,
 } from "lucide-react";
 
 const TOOLS = [
@@ -80,6 +81,14 @@ const TOOLS = [
     icon: FileImage,
     title: "PDF to Images",
     desc: "Export each page as an image",
+    badge: "Premium",
+  },
+  {
+    id: "text-to-speech",
+    href: "/dashboard/document-tools/text-to-speech",
+    icon: Mic,
+    title: "Text to Speech",
+    desc: "Generate speech, or clone your own voice",
     badge: "Premium",
   },
 ];

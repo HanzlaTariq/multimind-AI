@@ -60,6 +60,17 @@ const UserSchema = new mongoose.Schema(
     // Billing (Stripe)
     stripeCustomerId: { type: String, default: "" },
     stripeSubscriptionId: { type: String, default: "" },
+
+    // Text-to-speech: cloned voice IDs (ElevenLabs account is shared across
+    // all users, so we track ownership here to scope each user's own voices)
+    customVoices: [
+      {
+        voiceId: { type: String, required: true },
+        name: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+        _id: false,
+      },
+    ],
   },
   { timestamps: true }
 );

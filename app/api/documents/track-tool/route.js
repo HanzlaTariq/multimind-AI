@@ -19,16 +19,28 @@ export async function POST(req) {
 
   await dbConnect();
 
-  const user = await User.findById(session.user.id);
+  // Atomic operations avoid the version-conflict ("VersionError") that a
+  // find -> mutate -> save pattern can hit when two requests land close
+  // together (e.g. React StrictMode double-invoking an effect in dev).
+  await User.updateOne({ _id: session.user.id }, { $pull: { recentTools: { toolId } } });
+
+  const user = await User.findByIdAndUpdate(
+    session.user.id,
+    {
+      $push: {
+        recentTools: {
+          $each: [{ toolId, label, href, lastUsedAt: new Date() }],
+          $position: 0,
+          $slice: MAX_RECENTS,
+        },
+      },
+    },
+    { new: true }
+  ).select("recentTools");
+
   if (!user) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
-
-  const withoutThis = (user.recentTools || []).filter((t) => t.toolId !== toolId);
-  withoutThis.unshift({ toolId, label, href, lastUsedAt: new Date() });
-  user.recentTools = withoutThis.slice(0, MAX_RECENTS);
-
-  await user.save();
 
   return Response.json({ recentTools: user.recentTools });
 }
