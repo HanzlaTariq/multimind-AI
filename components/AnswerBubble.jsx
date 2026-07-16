@@ -163,6 +163,7 @@ export default function AnswerBubble({
   regenerating,
   pinned,
   onTogglePin,
+  onShare,
   shouldType,
   onTypingDone,
   fontClass = "",
@@ -351,6 +352,16 @@ export default function AnswerBubble({
               {pinned ? "Unpin" : "Pin"}
             </button>
           )}
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+              title="Share this conversation"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </button>
+          )}
         </div>
       </div>
     );
@@ -452,6 +463,16 @@ export default function AnswerBubble({
             >
               {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
               {pinned ? "Unpin" : "Pin"}
+            </button>
+          )}
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+              title="Share this conversation"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
             </button>
           )}
         </div>
