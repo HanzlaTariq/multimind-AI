@@ -269,38 +269,6 @@ export default function AnswerBubble({
     exportTextToPdf(activeResponse.text, "multimind-answer.pdf");
   }
 
-  async function handleShare() {
-    if (!activeResponse?.text) return;
-    
-    const shareText = activeResponse.text;
-    const shareData = {
-      title: "MultiMind Answer",
-      text: shareText,
-      url: typeof window !== "undefined" ? window.location.href : "",
-    };
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // Fallback: Copy to clipboard
-        const shareMessage = `${shareText}\n\n---\nShared from MultiMind`;
-        await navigator.clipboard.writeText(shareMessage);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }
-    } catch (err) {
-      if (err.name !== "AbortError") {
-        // User didn't cancel the share
-        try {
-          await navigator.clipboard.writeText(shareText);
-        } catch (e) {
-          // clipboard may be unavailable — fail silently
-        }
-      }
-    }
-  }
-
   function stripForSpeech(text) {
     return text
       .replace(/```[\s\S]*?```/g, " Code block omitted. ")
@@ -361,14 +329,6 @@ export default function AnswerBubble({
             <Download className="h-3.5 w-3.5" />
             Download
           </a>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
-            title="Share image"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share
-          </button>
           {onRegenerate && (
             <button
               onClick={onRegenerate}
@@ -471,14 +431,6 @@ export default function AnswerBubble({
           >
             <FileDown className="h-3.5 w-3.5" />
             PDF
-          </button>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
-            title="Share this answer"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share
           </button>
           {onRegenerate && (
             <button

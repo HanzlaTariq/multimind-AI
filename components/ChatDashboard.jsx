@@ -23,8 +23,10 @@ import {
   FileDown,
   Settings as SettingsIcon,
   EyeOff,
+  Share2,
 } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
+import ShareModal from "@/components/ShareModal";
 import { exportConversationToPdf } from "@/lib/pdfExport";
 import { useSettings } from "@/lib/SettingsContext";
 
@@ -53,6 +55,8 @@ export default function ChatDashboard({ user }) {
   const [regeneratingIndex, setRegeneratingIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareInfo, setShareInfo] = useState({ isPublic: false, shareId: null });
   const [outlineTab, setOutlineTab] = useState("outline");
   const [error, setError] = useState("");
   const [attachment, setAttachment] = useState(null);
@@ -99,6 +103,10 @@ export default function ChatDashboard({ user }) {
       alreadyShownRef.current = new Set(loadedTurns.map((_, i) => i));
       setConversationId(id);
       setTurns(loadedTurns);
+      setShareInfo({
+        isPublic: !!data.conversation.isPublic,
+        shareId: data.conversation.shareId || null,
+      });
     }
   }
 
@@ -110,6 +118,7 @@ export default function ChatDashboard({ user }) {
     setAttachment(null);
     setImageMode(false);
     setSidebarOpen(false);
+    setShareInfo({ isPublic: false, shareId: null });
   }
 
   function handleToggleTemporary() {
@@ -341,10 +350,17 @@ export default function ChatDashboard({ user }) {
         <button
           type="button"
           onClick={() => setImageMode((v) => !v)}
-          className={`mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+          disabled={temporaryMode}
+          className={`mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition disabled:opacity-30 ${
             imageMode ? "bg-signal/15 text-signal" : "text-mist hover:bg-surface2 hover:text-paper"
           }`}
-          title={imageMode ? "Image mode on" : "Generate an image instead"}
+          title={
+            temporaryMode
+              ? "Image generation isn't available in Temporary Chat"
+              : imageMode
+              ? "Image mode on"
+              : "Generate an image instead"
+          }
           aria-label="Toggle image generation mode"
         >
           <ImageIcon className="h-4 w-4" />
@@ -545,6 +561,16 @@ export default function ChatDashboard({ user }) {
             </button>
             {!isEmpty && (
               <>
+                {conversationId && !temporaryMode && (
+                  <button
+                    onClick={() => setShareModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
+                    title="Share this conversation"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Share</span>
+                  </button>
+                )}
                 <button
                   onClick={() => exportConversationToPdf(turns)}
                   className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
@@ -633,6 +659,11 @@ export default function ChatDashboard({ user }) {
                         }
                         pinned={!!turn.pinned}
                         onTogglePin={turn.best && conversationId ? () => handleTogglePin(i) : null}
+                        onShare={
+                          turn.best && conversationId && !temporaryMode
+                            ? () => setShareModalOpen(true)
+                            : null
+                        }
                         shouldType={
                           !!turn.best && !alreadyShownRef.current.has(i) && !settings.reduceMotion
                         }
@@ -741,6 +772,14 @@ export default function ChatDashboard({ user }) {
           </div>
         </div>
       </aside>
+
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        conversationId={conversationId}
+        shareInfo={shareInfo}
+        onShareInfoChange={setShareInfo}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -42,11 +43,7 @@ export async function PATCH(req, { params }) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { turnIndex, pinned } = await req.json();
-
-  if (typeof turnIndex !== "number") {
-    return Response.json({ error: "turnIndex is required" }, { status: 400 });
-  }
+  const body = await req.json();
 
   await dbConnect();
 
@@ -59,11 +56,20 @@ export async function PATCH(req, { params }) {
     return Response.json({ error: "Conversation not found" }, { status: 404 });
   }
 
-  if (!conversation.turns[turnIndex]) {
-    return Response.json({ error: "Turn not found" }, { status: 404 });
+  if (typeof body.turnIndex === "number" && typeof body.pinned === "boolean") {
+    if (!conversation.turns[body.turnIndex]) {
+      return Response.json({ error: "Turn not found" }, { status: 404 });
+    }
+    conversation.turns[body.turnIndex].pinned = body.pinned;
   }
 
-  conversation.turns[turnIndex].pinned = pinned;
+  if (typeof body.isPublic === "boolean") {
+    conversation.isPublic = body.isPublic;
+    if (body.isPublic && !conversation.shareId) {
+      conversation.shareId = randomUUID();
+    }
+  }
+
   await conversation.save();
 
   return Response.json({ conversation });
