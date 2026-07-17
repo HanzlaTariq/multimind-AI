@@ -57,6 +57,8 @@ export default function ChatDashboard({ user }) {
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareInfo, setShareInfo] = useState({ isPublic: false, shareId: null });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [outlineTab, setOutlineTab] = useState("outline");
   const [error, setError] = useState("");
   const [attachment, setAttachment] = useState(null);
@@ -150,10 +152,21 @@ export default function ChatDashboard({ user }) {
     setAttachment(null);
   }
 
-  async function deleteConversation(e, id) {
+  function openDeleteConversationModal(e, conversation) {
     e.stopPropagation();
+    setDeleteTarget(conversation);
+    setDeleteModalOpen(true);
+  }
+
+  async function confirmDeleteConversation() {
+    if (!deleteTarget?._id) return;
+
+    const id = deleteTarget._id;
     setConversations((prev) => prev.filter((c) => c._id !== id));
     if (id === conversationId) startNewChat();
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+
     try {
       await fetch(`/api/conversations/${id}`, { method: "DELETE" });
     } catch (e) {
@@ -482,7 +495,7 @@ export default function ChatDashboard({ user }) {
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => deleteConversation(e, c._id)}
+                  onClick={(e) => openDeleteConversationModal(e, c)}
                   className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/60"
                   aria-label="Delete conversation"
                 >
@@ -780,6 +793,44 @@ export default function ChatDashboard({ user }) {
         shareInfo={shareInfo}
         onShareInfoChange={setShareInfo}
       />
+
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-2xl shadow-black/40">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-display text-lg font-semibold text-paper">Delete chat?</h3>
+                <p className="mt-1 text-sm leading-6 text-mist">
+                  This will permanently remove {deleteTarget?.title ? `“${deleteTarget.title}”` : "this chat"} from your history.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setDeleteTarget(null);
+                }}
+                className="rounded-lg border border-line px-4 py-2 text-sm text-paper transition hover:border-mist/40 hover:bg-surface2"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteConversation}
+                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-400"
+              >
+                Yes, delete it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
