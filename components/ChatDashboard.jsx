@@ -609,7 +609,7 @@ export default function ChatDashboard({ user }) {
             <div className="mb-8 flex items-center gap-3">
               <Sparkles className="h-7 w-7 shrink-0 text-groq" />
               <h1 className="font-serif text-3xl italic tracking-tight text-paper sm:text-5xl">
-                Back at it, {firstName(user?.preferredName)}
+                Back at it, {firstName(user?.preferredName || user?.name)}
               </h1>
             </div>
             {inputBar}
