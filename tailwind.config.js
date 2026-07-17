@@ -7,16 +7,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#0B0E14",
-        surface: "#11151D",
-        surface2: "#171C26",
-        line: "#232936",
-        mist: "#8B93A3",
-        paper: "#E7E9EE",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        surface2: "rgb(var(--color-surface2) / <alpha-value>)",
+        line: "rgb(var(--color-line) / <alpha-value>)",
+        mist: "rgb(var(--color-mist) / <alpha-value>)",
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
+        signal: "rgb(var(--color-signal) / <alpha-value>)",
         gemini: "#5B8DEF",
         groq: "#F0975B",
         deepseek: "#B084F0",
-        signal: "#4DE0C0",
       },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],

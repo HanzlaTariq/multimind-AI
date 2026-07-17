@@ -29,6 +29,37 @@ const FONT_OPTIONS = [
   { value: "mono", label: "Mono", className: "font-mono" },
 ];
 
+const THEME_OPTIONS = [
+  {
+    value: "midnight",
+    label: "Midnight",
+    bg: "#0B0E14",
+    surface: "#171C26",
+    accent: "#4DE0C0",
+  },
+  {
+    value: "light",
+    label: "Light",
+    bg: "#F8FAFC",
+    surface: "#FFFFFF",
+    accent: "#0D9488",
+  },
+  {
+    value: "nord",
+    label: "Nord",
+    bg: "#0B1220",
+    surface: "#16233B",
+    accent: "#38BDF8",
+  },
+  {
+    value: "sepia",
+    label: "Sepia",
+    bg: "#F5EDE0",
+    surface: "#EFE4D2",
+    accent: "#B45309",
+  },
+];
+
 const PRO_FEATURES = [
   "Unlimited parallel queries",
   "All 3 models, priority routing",
@@ -190,6 +221,36 @@ function PreferencesTab() {
       <div>
         <h2 className="font-display text-lg font-semibold text-paper">Preferences</h2>
         <p className="mt-1 text-sm text-mist">Control how MultiMind looks and behaves for you.</p>
+      </div>
+
+      <div>
+        <p className="mb-2 text-sm text-paper">Theme</p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {THEME_OPTIONS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => updateSettings({ theme: t.value })}
+              className={`overflow-hidden rounded-xl border-2 transition ${
+                settings.theme === t.value ? "border-signal" : "border-line hover:border-mist/40"
+              }`}
+            >
+              <div className="flex h-14 items-end gap-1 p-2" style={{ backgroundColor: t.bg }}>
+                <span
+                  className="h-6 w-6 rounded-md"
+                  style={{ backgroundColor: t.surface }}
+                />
+                <span
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: t.accent }}
+                />
+              </div>
+              <div className="flex items-center justify-between border-t border-line bg-surface px-2.5 py-1.5">
+                <span className="text-xs text-paper">{t.label}</span>
+                {settings.theme === t.value && <Check className="h-3.5 w-3.5 text-signal" />}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>

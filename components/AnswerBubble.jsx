@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import MermaidDiagram from "@/components/MermaidDiagram";
 import { exportTextToPdf } from "@/lib/pdfExport";
+import { useSettings } from "@/lib/SettingsContext";
 
 const MODEL_LABEL = {
   gemini: "Gemini",
@@ -168,6 +169,8 @@ export default function AnswerBubble({
   onTypingDone,
   fontClass = "",
 }) {
+  const { settings } = useSettings();
+  const isDarkTheme = settings.theme !== "light" && settings.theme !== "sepia";
   const [copied, setCopied] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null); // null = "Best"
   const [speaking, setSpeaking] = useState(false);
@@ -398,9 +401,9 @@ export default function AnswerBubble({
           </div>
         )}
         <div
-          className={`prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${fontClass} ${
-            isError ? "text-red-300" : "text-paper/90"
-          }`}
+          className={`prose prose-sm max-w-none text-[13.5px] leading-relaxed prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none ${
+            isDarkTheme ? "prose-invert" : ""
+          } ${fontClass} ${isError ? "text-red-300" : "text-paper/90"}`}
         >
           <ReactMarkdown components={{ code: CodeBlock }}>{shownText}</ReactMarkdown>
           {stillTyping && <span className="animate-blink text-signal">▍</span>}

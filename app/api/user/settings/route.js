@@ -4,7 +4,7 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 
 const SELECT_FIELDS =
-  "name email image preferredName role customInstructions chatFont reduceMotion notifyOnComplete plan";
+  "name email image preferredName role customInstructions chatFont theme reduceMotion notifyOnComplete plan";
 
 const ALLOWED_UPDATE_FIELDS = [
   "name",
@@ -12,6 +12,7 @@ const ALLOWED_UPDATE_FIELDS = [
   "role",
   "customInstructions",
   "chatFont",
+  "theme",
   "reduceMotion",
   "notifyOnComplete",
 ];

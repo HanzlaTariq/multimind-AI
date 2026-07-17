@@ -43,6 +43,18 @@ export default async function RootLayout({ children }) {
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem('mm-theme');
+                if (t) document.documentElement.setAttribute('data-theme', t);
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="font-body antialiased">
         <Providers session={session}>{children}</Providers>
       </body>

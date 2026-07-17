@@ -54,6 +54,11 @@ const UserSchema = new mongoose.Schema(
       enum: ["sans", "serif", "mono"],
       default: "sans",
     },
+    theme: {
+      type: String,
+      enum: ["midnight", "light", "nord", "sepia"],
+      default: "midnight",
+    },
     reduceMotion: { type: Boolean, default: false },
     notifyOnComplete: { type: Boolean, default: false },
 

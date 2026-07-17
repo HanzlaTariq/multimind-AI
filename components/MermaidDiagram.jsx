@@ -1,48 +1,90 @@
 "use client";
 
 import { useEffect, useRef, useState, useId } from "react";
+import { useSettings } from "@/lib/SettingsContext";
+
+const DARK_VARS = {
+  background: "#11151D",
+  primaryColor: "#171C26",
+  primaryTextColor: "#E7E9EE",
+  primaryBorderColor: "#232936",
+  lineColor: "#8B93A3",
+  secondaryColor: "#171C26",
+  tertiaryColor: "#0B0E14",
+};
+
+const LIGHT_VARS = {
+  background: "#FFFFFF",
+  primaryColor: "#F1F5F9",
+  primaryTextColor: "#0F172A",
+  primaryBorderColor: "#E2E8F0",
+  lineColor: "#64748B",
+  secondaryColor: "#F1F5F9",
+  tertiaryColor: "#F8FAFC",
+};
 
 let mermaidInstance = null;
-async function getMermaid() {
+let currentThemeKey = null;
+let renderQueue = Promise.resolve();
+
+async function getMermaid(isDark) {
+  const mod = await import("mermaid");
   if (!mermaidInstance) {
-    const mod = await import("mermaid");
     mermaidInstance = mod.default;
+  }
+
+  // Only re-initialize when the theme actually changes — calling
+  // initialize() on every render (especially while another render is still
+  // in flight) is what caused the intermittent failures.
+  const themeKey = isDark ? "dark" : "light";
+  if (currentThemeKey !== themeKey) {
     mermaidInstance.initialize({
       startOnLoad: false,
-      theme: "dark",
-      themeVariables: {
-        background: "#11151D",
-        primaryColor: "#171C26",
-        primaryTextColor: "#E7E9EE",
-        primaryBorderColor: "#232936",
-        lineColor: "#8B93A3",
-        secondaryColor: "#171C26",
-        tertiaryColor: "#0B0E14",
-      },
+      theme: isDark ? "dark" : "neutral",
+      themeVariables: isDark ? DARK_VARS : LIGHT_VARS,
       fontFamily: "var(--font-body), sans-serif",
     });
+    currentThemeKey = themeKey;
   }
+
   return mermaidInstance;
 }
 
+// mermaid.js isn't safe for multiple concurrent render() calls against a
+// shared instance — chain every render request onto one queue so they run
+// one at a time, app-wide.
+function queuedRender(id, code, isDark) {
+  const task = renderQueue.then(async () => {
+    const mermaid = await getMermaid(isDark);
+    return mermaid.render(id, code);
+  });
+  renderQueue = task.then(
+    () => {},
+    () => {}
+  );
+  return task;
+}
+
 export default function MermaidDiagram({ code }) {
+  const { settings } = useSettings();
+  const isDark = settings.theme !== "light" && settings.theme !== "sepia";
   const containerId = useId().replace(/:/g, "");
   const [svg, setSvg] = useState(null);
   const [error, setError] = useState(null);
-  const renderedFor = useRef(null);
+  const renderedForRef = useRef(null);
 
   useEffect(() => {
-    if (renderedFor.current === code) return;
+    const cacheKey = `${code}::${isDark ? "dark" : "light"}`;
+    if (renderedForRef.current === cacheKey) return;
     let cancelled = false;
 
     (async () => {
       try {
-        const mermaid = await getMermaid();
-        const { svg } = await mermaid.render(`mermaid-${containerId}`, code);
+        const { svg } = await queuedRender(`mermaid-${containerId}`, code, isDark);
         if (!cancelled) {
           setSvg(svg);
           setError(null);
-          renderedFor.current = code;
+          renderedForRef.current = cacheKey;
         }
       } catch (err) {
         if (!cancelled) setError("Couldn't render this diagram.");
@@ -52,7 +94,7 @@ export default function MermaidDiagram({ code }) {
     return () => {
       cancelled = true;
     };
-  }, [code, containerId]);
+  }, [code, containerId, isDark]);
 
   if (error) {
     return (

@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS = {
   role: "",
   customInstructions: "",
   chatFont: "sans",
+  theme: "midnight",
   reduceMotion: false,
   notifyOnComplete: false,
   plan: "free",
@@ -42,6 +43,18 @@ export function SettingsProvider({ children }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Keep the <html data-theme="..."> attribute and localStorage (used by the
+  // no-flash blocking script in layout.js) in sync with the saved theme.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.setAttribute("data-theme", settings.theme);
+    try {
+      localStorage.setItem("mm-theme", settings.theme);
+    } catch (e) {
+      // localStorage may be unavailable (private browsing, etc) — safe to ignore
+    }
+  }, [settings.theme]);
 
   const updateSettings = useCallback(async (patch) => {
     setSettings((prev) => ({ ...prev, ...patch })); // optimistic
