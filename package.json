@@ -9,27 +9,27 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "arabic-persian-reshaper": "^1.0.1",
+    "bcryptjs": "^2.4.3",
+    "jspdf": "^2.5.1",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.400.0",
+    "mermaid": "^10.9.1",
+    "mongoose": "^8.5.1",
     "next": "14.2.35",
+    "next-auth": "^4.24.7",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "next-auth": "^4.24.7",
-    "mongoose": "^8.5.1",
-    "bcryptjs": "^2.4.3",
-    "lucide-react": "^0.400.0",
     "react-markdown": "^9.0.1",
-    "mermaid": "^10.9.1",
-    "jspdf": "^2.5.1",
-    "pdf-lib": "^1.17.1",
     "sharp": "^0.33.4",
-    "xlsx": "^0.18.5",
-    "jszip": "^3.10.1",
     "stripe": "^16.2.0",
-    "arabic-persian-reshaper": "^1.0.1"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.7",
-    "postcss": "^8.4.40",
+    "@tailwindcss/typography": "^0.5.13",
     "autoprefixer": "^10.4.19",
-    "@tailwindcss/typography": "^0.5.13"
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7"
   }
 }
