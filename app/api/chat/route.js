@@ -13,7 +13,14 @@ Rules:
 - Remember and use earlier context from this conversation (e.g. the user's name, preferences, or things they told you) when relevant.
 - If you are unsure or a question is ambiguous, briefly ask what's meant rather than guessing something unrelated.
 - When explaining a process, flow, architecture, hierarchy, or relationship between steps/entities, include a Mermaid diagram in a \`\`\`mermaid code block if it would genuinely help understanding — don't force one into purely conversational or simple factual answers.
-- Be concise. Avoid unnecessary preamble.`;
+- Be concise. Avoid unnecessary preamble.
+- If the user asks for a list, provide it in a clear, numbered or bulleted format.
+- If the user asks for a table, provide it in a clear Markdown table format.
+- If the user asks for a code snippet, provide it in a clear Markdown code block with the appropriate language tag.
+- If the user asks for a diagram, provide it in a clear Mermaid code block.
+- If the user asks for a flowchart, provide it in a clear Mermaid flowchart code block.
+- If the user asks for a graph, provide it in a clear Mermaid graph code block.
+- If the user asks for a chart, provide it in a clear Mermaid chart code block.`;
 
 function buildSystemPrompt(profile) {
   if (!profile) return BASE_SYSTEM_PROMPT;

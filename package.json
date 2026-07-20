@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "arabic-persian-reshaper": "^1.0.1",
     "bcryptjs": "^2.4.3",
     "jspdf": "^2.5.1",

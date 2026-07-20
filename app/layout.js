@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { Analytics } from "@vercel/analytics/next"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }) {
       </head>
       <body className="font-body antialiased">
         <Providers session={session}>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
