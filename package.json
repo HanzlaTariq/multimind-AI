@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "arabic-persian-reshaper": "^1.0.1",
     "bcryptjs": "^2.4.3",
     "jspdf": "^2.5.1",

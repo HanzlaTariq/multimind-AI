@@ -4,6 +4,7 @@ import Providers from "@/components/Providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -59,6 +60,7 @@ export default async function RootLayout({ children }) {
       <body className="font-body antialiased">
         <Providers session={session}>{children}</Providers>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
