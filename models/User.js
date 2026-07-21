@@ -30,9 +30,11 @@ const UserSchema = new mongoose.Schema(
     },
     plan: {
       type: String,
-      enum: ["free", "pro"],
+      enum: ["free", "basic", "pro", "business"],
       default: "free",
     },
+    credits: { type: Number, default: 60 },
+    creditsResetAt: { type: Date, default: Date.now },
     recentTools: [
       {
         toolId: { type: String, required: true },

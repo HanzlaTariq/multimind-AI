@@ -3,8 +3,10 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
 import User from "@/models/User";
+import { routeToProvider } from "@/lib/providers";
+import { creditsForPlan } from "@/lib/plans";
 
-const BASE_SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot , Your name is MULTIMIND and devolped by HantIT.
+const BASE_SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot.
 
 Rules:
 - Reply in the same language and script the user used (English, Roman Urdu/Hindi, Urdu script, etc). If the user writes in Roman Urdu/Hinglish, understand it as natural conversational language rather than parsing words as literal English terms or names (e.g. "kia hall ha" / "kya haal hai" means "how are you", not a person's name).
@@ -13,14 +15,7 @@ Rules:
 - Remember and use earlier context from this conversation (e.g. the user's name, preferences, or things they told you) when relevant.
 - If you are unsure or a question is ambiguous, briefly ask what's meant rather than guessing something unrelated.
 - When explaining a process, flow, architecture, hierarchy, or relationship between steps/entities, include a Mermaid diagram in a \`\`\`mermaid code block if it would genuinely help understanding — don't force one into purely conversational or simple factual answers.
-- Be concise. Avoid unnecessary preamble.
-- If the user asks for a list, provide it in a clear, numbered or bulleted format.
-- If the user asks for a table, provide it in a clear Markdown table format.
-- If the user asks for a code snippet, provide it in a clear Markdown code block with the appropriate language tag.
-- If the user asks for a diagram, provide it in a clear Mermaid code block.
-- If the user asks for a flowchart, provide it in a clear Mermaid flowchart code block.
-- If the user asks for a graph, provide it in a clear Mermaid graph code block.
-- If the user asks for a chart, provide it in a clear Mermaid chart code block.`;
+- Be concise. Avoid unnecessary preamble.`;
 
 function buildSystemPrompt(profile) {
   if (!profile) return BASE_SYSTEM_PROMPT;
@@ -142,49 +137,131 @@ async function callDeepSeek(prompt, history, systemPrompt) {
   }
 }
 
-async function judgeBest(prompt, candidates) {
-  const options = candidates
-    .map((c, i) => `Answer ${i + 1} (${c.model}):\n${c.text}`)
-    .join("\n\n---\n\n");
+// Placeholder providers — inactive until their API key is set in .env, at
+// which point the router will automatically start picking them for
+// well-suited prompts. Model names below are current as of early 2026 and
+// may need updating if the provider renames/retires them.
 
-  const judgePrompt = `A user asked: "${prompt}"
-
-Here are ${candidates.length} candidate answers from different AI models:
-
-${options}
-
-Reply with ONLY the number of the single best answer (most accurate, complete, and well-written). Reply with just the digit, nothing else.`;
-
+async function callGrok(prompt, history, systemPrompt) {
+  const start = Date.now();
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const messages = [{ role: "system", content: systemPrompt }];
+    for (const h of history) {
+      messages.push({ role: "user", content: h.prompt });
+      if (h.answer) messages.push({ role: "assistant", content: h.answer });
+    }
+    messages.push({ role: "user", content: prompt });
+
+    const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [{ role: "user", content: judgePrompt }],
-        temperature: 0,
-        max_tokens: 5,
+        model: "grok-2-latest",
+        messages,
       }),
     });
     const data = await res.json();
-    const raw = data?.choices?.[0]?.message?.content || "";
-    const match = raw.match(/\d+/);
-    const idx = match ? parseInt(match[0], 10) - 1 : 0;
-    if (idx >= 0 && idx < candidates.length) return candidates[idx];
+    if (!res.ok) throw new Error(data?.error?.message || "Grok request failed");
+    const text = data?.choices?.[0]?.message?.content || "";
+    return { model: "grok", text, latencyMs: Date.now() - start, status: "ok" };
   } catch (err) {
-    // fall through to heuristic fallback below
+    return {
+      model: "grok",
+      text: err.message || "Grok failed to respond",
+      latencyMs: Date.now() - start,
+      status: "error",
+    };
   }
-
-  return candidates.reduce((best, c) => (c.text.length > best.text.length ? c : best));
 }
+
+async function callOpenAI(prompt, history, systemPrompt) {
+  const start = Date.now();
+  try {
+    const messages = [{ role: "system", content: systemPrompt }];
+    for (const h of history) {
+      messages.push({ role: "user", content: h.prompt });
+      if (h.answer) messages.push({ role: "assistant", content: h.answer });
+    }
+    messages.push({ role: "user", content: prompt });
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || "ChatGPT request failed");
+    const text = data?.choices?.[0]?.message?.content || "";
+    return { model: "openai", text, latencyMs: Date.now() - start, status: "ok" };
+  } catch (err) {
+    return {
+      model: "openai",
+      text: err.message || "ChatGPT failed to respond",
+      latencyMs: Date.now() - start,
+      status: "error",
+    };
+  }
+}
+
+async function callClaude(prompt, history, systemPrompt) {
+  const start = Date.now();
+  try {
+    const messages = [];
+    for (const h of history) {
+      messages.push({ role: "user", content: h.prompt });
+      if (h.answer) messages.push({ role: "assistant", content: h.answer });
+    }
+    messages.push({ role: "user", content: prompt });
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || "Claude request failed");
+    const text = data?.content?.find((c) => c.type === "text")?.text || "";
+    return { model: "claude", text, latencyMs: Date.now() - start, status: "ok" };
+  } catch (err) {
+    return {
+      model: "claude",
+      text: err.message || "Claude failed to respond",
+      latencyMs: Date.now() - start,
+      status: "error",
+    };
+  }
+}
+
+const PROVIDER_CALLERS = {
+  gemini: callGemini,
+  groq: callGroq,
+  deepseek: callDeepSeek,
+  grok: callGrok,
+  openai: callOpenAI,
+  claude: callClaude,
+};
 
 function buildEffectivePrompt(prompt, attachment) {
   if (!attachment?.content) return prompt;
 
-  // Guard against runaway payloads/tokens
   const MAX_CHARS = 60000;
   const content =
     attachment.content.length > MAX_CHARS
@@ -195,6 +272,8 @@ function buildEffectivePrompt(prompt, attachment) {
     prompt?.trim() || "Please review this file and point out anything that should be fixed."
   }`;
 }
+
+const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -211,12 +290,37 @@ export async function POST(req) {
 
   await dbConnect();
 
-  const userProfile = await User.findById(session.user.id).select(
-    "preferredName role customInstructions"
-  );
-  const systemPrompt = buildSystemPrompt(userProfile);
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
 
-  // Load prior turns so the models have memory of this conversation. In
+  // Reset credits if a new monthly period has started
+  const now = new Date();
+  const lastReset = user.creditsResetAt ? new Date(user.creditsResetAt) : null;
+  if (!lastReset || now - lastReset > MS_PER_MONTH) {
+    user.credits = creditsForPlan(user.plan);
+    user.creditsResetAt = now;
+    await user.save();
+  }
+
+  const systemPrompt = buildSystemPrompt(user);
+  const effectivePrompt = buildEffectivePrompt(prompt, attachment);
+
+  // Smart routing: pick ONE best-fit model for this prompt (among providers
+  // whose API key is configured), affordable within the user's remaining
+  // credits — rather than calling every model on every message.
+  const chosenProvider = routeToProvider(effectivePrompt, { maxCredits: user.credits });
+
+  if (!chosenProvider) {
+    const reason =
+      user.credits <= 0
+        ? "You're out of credits for this period. Upgrade your plan or wait for your next monthly reset."
+        : "No AI providers are currently configured on the server.";
+    return Response.json({ error: reason }, { status: 402 });
+  }
+
+  // Load prior turns so the model has memory of this conversation. In
   // temporary mode nothing is persisted, so history comes from the client
   // instead of the database.
   let history = [];
@@ -237,43 +341,37 @@ export async function POST(req) {
     }
   }
 
-  // Keep only the last 10 turns to stay within reasonable token limits
   const trimmedHistory = history.slice(-10);
-  const effectivePrompt = buildEffectivePrompt(prompt, attachment);
 
-  const [gemini, groq, deepseek] = await Promise.all([
-    callGemini(effectivePrompt, trimmedHistory, systemPrompt),
-    callGroq(effectivePrompt, trimmedHistory, systemPrompt),
-    callDeepSeek(effectivePrompt, trimmedHistory, systemPrompt),
-  ]);
+  const caller = PROVIDER_CALLERS[chosenProvider.id];
+  const result = await caller(effectivePrompt, trimmedHistory, systemPrompt);
 
-  const all = [gemini, groq, deepseek];
-  const successful = all.filter((r) => r.status === "ok" && r.text && r.text.trim());
+  const best =
+    result.status === "ok" && result.text && result.text.trim()
+      ? result
+      : {
+          model: "multimind",
+          text: `${chosenProvider.label} is unavailable right now. Please try again in a moment.`,
+          latencyMs: result.latencyMs || 0,
+          status: "error",
+        };
 
-  let best;
-  if (successful.length === 0) {
-    best = {
-      model: "multimind",
-      text: "All three models are unavailable right now. Please check your API keys/billing and try again in a moment.",
-      latencyMs: 0,
-      status: "error",
-    };
-  } else if (successful.length === 1) {
-    best = successful[0];
-  } else {
-    best = await judgeBest(effectivePrompt, successful);
+  // Only charge credits for a successful response
+  if (best.status === "ok") {
+    user.credits = Math.max(0, user.credits - chosenProvider.creditCost);
+    await user.save();
   }
 
   const turn = {
     prompt: prompt?.trim() || `Review ${attachment?.name || "this file"}`,
     attachmentName: attachment?.name || "",
-    responses: all,
+    responses: [result],
     best,
     createdAt: new Date(),
   };
 
   if (temporary) {
-    return Response.json({ conversationId: null, turn, temporary: true });
+    return Response.json({ conversationId: null, turn, temporary: true, creditsRemaining: user.credits });
   }
 
   let conversation = existingConversation;
@@ -291,5 +389,6 @@ export async function POST(req) {
   return Response.json({
     conversationId: conversation._id.toString(),
     turn,
+    creditsRemaining: user.credits,
   });
 }

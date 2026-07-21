@@ -1,6 +1,7 @@
 import { getStripe } from "@/lib/stripe";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { planForPriceId, creditsForPlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -31,10 +32,13 @@ export async function POST(req) {
       case "checkout.session.completed": {
         const checkoutSession = event.data.object;
         const userId = checkoutSession.metadata?.userId;
+        const plan = checkoutSession.metadata?.plan || "basic";
         if (userId) {
           await User.findByIdAndUpdate(userId, {
-            plan: "pro",
+            plan,
             stripeSubscriptionId: checkoutSession.subscription,
+            credits: creditsForPlan(plan),
+            creditsResetAt: new Date(),
           });
         }
         break;
@@ -42,17 +46,31 @@ export async function POST(req) {
       case "customer.subscription.updated": {
         const subscription = event.data.object;
         const isActive = ["active", "trialing"].includes(subscription.status);
-        await User.findOneAndUpdate(
-          { stripeSubscriptionId: subscription.id },
-          { plan: isActive ? "pro" : "free" }
-        );
+        const priceId = subscription.items?.data?.[0]?.price?.id;
+        const matchedPlan = priceId ? planForPriceId(priceId) : null;
+
+        const user = await User.findOne({ stripeSubscriptionId: subscription.id });
+        if (user) {
+          if (!isActive) {
+            user.plan = "free";
+            user.credits = creditsForPlan("free");
+          } else if (matchedPlan) {
+            // Plan may have changed (upgrade/downgrade) — sync credits to the new tier
+            if (user.plan !== matchedPlan) {
+              user.credits = creditsForPlan(matchedPlan);
+            }
+            user.plan = matchedPlan;
+          }
+          user.creditsResetAt = new Date();
+          await user.save();
+        }
         break;
       }
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         await User.findOneAndUpdate(
           { stripeSubscriptionId: subscription.id },
-          { plan: "free", stripeSubscriptionId: "" }
+          { plan: "free", stripeSubscriptionId: "", credits: creditsForPlan("free"), creditsResetAt: new Date() }
         );
         break;
       }

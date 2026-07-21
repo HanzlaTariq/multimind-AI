@@ -2,7 +2,11 @@ import mongoose from "mongoose";
 
 const ResponseSchema = new mongoose.Schema(
   {
-    model: { type: String, enum: ["gemini", "groq", "deepseek", "multimind"], required: true },
+    model: {
+      type: String,
+      enum: ["gemini", "groq", "deepseek", "grok", "openai", "claude", "multimind"],
+      required: true,
+    },
     type: { type: String, enum: ["text", "image"], default: "text" },
     text: { type: String, default: "" },
     imageData: { type: String, default: "" }, // data URL for generated images

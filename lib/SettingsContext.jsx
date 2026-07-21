@@ -12,6 +12,8 @@ const DEFAULT_SETTINGS = {
   reduceMotion: false,
   notifyOnComplete: false,
   plan: "free",
+  credits: 60,
+  creditsResetAt: null,
   image: "",
 };
 
