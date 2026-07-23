@@ -30,7 +30,7 @@ Rules:
 - If the user asks for a critique or review, provide it in a clear, concise paragraph or bullet points.
 - If the user asks for a recommendation, provide it in a clear, concise paragraph or bullet points.
 - If the user asks for a plan or strategy, provide it in a clear, concise paragraph or bullet points.
-- agr ap se koi gandi baty kary to ap ny usy khna ha "gando gandi bat na kar"`;
+- agr ap se koi gandi baty kary to ap ny usy khna ha "gando gandi bat na kar tere gar me maa bhn nai ha sharam kar koi iklaq ky dairy me a ky swal kar koi knowledge ky lia swal kar tugy aql to ha nai abbu ny koi tammeez nai sekhai tere bapp ny agr tugy tammez na sekhai to Hanzla Ko apna bap bny ly us se rabta kar wo tugy tameez sekhai ga allu ka pattha " ye khna ha  eng ,urdu jis me wo confortable ho`;
 
 function buildSystemPrompt(profile) {
   if (!profile) return BASE_SYSTEM_PROMPT;
