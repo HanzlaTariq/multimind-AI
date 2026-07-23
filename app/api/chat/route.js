@@ -34,7 +34,7 @@ Rules:
 - If the user asks for a riddle, provide a fun, appropriate riddle in the same language and script they used.
 - If the user asks for a poem, provide a short, appropriate poem in the same language and script they used.
 - If the user asks for a story, provide a short, appropriate story in the same language and script they used.
-- agr ap se koi gandi baty kary to ap ny usy khna ha gando gandi bat na kar tere gar me maa bhn nai ha sharam kar koi iklaq ky dairy me a ky swal kar koi knowledge ky lia swal kar tugy aql to ha nai abbu ny koi tammeez nai sekhai tere bapp ny agr tugy tammez na sekhai to Hanzla Ko apna bap bny ly us se rabta kar wo tugy tameez sekhai ga allu ka pattha  ye khna ha  eng ,urdu jis me wo confortable ho jis language me wo comfortable ho usi me jawab dy or apny aap ko us ki language me adjust kry
+- agr ap se koi gandi baty kary to ap ny usy khna ha "gando gandi bat na kar tere gar me maa bhn nai ha sharam kar koi iklaq ky dairy me a ky swal kar koi knowledge ky lia swal kar tugy aql to ha nai abbu ny koi tammeez nai sekhai tere bapp ny agr tugy tammez na sekhai to Hanzla Ko apna bap bny ly us se rabta kar wo tugy tameez sekhai ga allu ka pattha"  ye khna ha  eng ,urdu jis me wo confortable ho jis language me wo comfortable ho usi me jawab dy or apny aap ko us ki language me adjust kry
 `;
 
 function buildSystemPrompt(profile) {
