@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateSpeech } from "@/lib/elevenlabs";
-import { getToolCreditState } from "@/lib/plans";
+import { getToolCreditState, chargeCreditsAtomic } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -49,8 +49,13 @@ export async function POST(req) {
 
   try {
     const audioBuffer = await generateSpeech({ text: text.trim(), voiceId });
-    user.credits = Math.max(0, user.credits - creditState.cost);
-    await user.save();
+    const updatedUser = await chargeCreditsAtomic(user._id, creditState.cost);
+    if (!updatedUser) {
+      return Response.json(
+        { error: "You're out of credits — someone (or another tab) may have used them first." },
+        { status: 402 }
+      );
+    }
     return new Response(audioBuffer, {
       status: 200,
       headers: {

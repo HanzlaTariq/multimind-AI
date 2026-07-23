@@ -5,7 +5,7 @@ import User from "@/models/User";
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import JSZip from "jszip";
-import { getToolCreditState } from "@/lib/plans";
+import { getToolCreditState, chargeCreditsAtomic } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -141,8 +141,13 @@ export async function POST(req) {
       Math.round(((originalSize - compressedSize) / originalSize) * 100)
     );
 
-    user.credits = Math.max(0, user.credits - creditState.cost);
-    await user.save();
+    const updatedUser = await chargeCreditsAtomic(user._id, creditState.cost);
+    if (!updatedUser) {
+      return Response.json(
+        { error: "You're out of credits — someone (or another tab) may have used them first." },
+        { status: 402 }
+      );
+    }
 
     return new Response(outputBytes, {
       status: 200,

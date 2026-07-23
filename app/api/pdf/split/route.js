@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { PDFDocument } from "pdf-lib";
-import { getToolCreditState } from "@/lib/plans";
+import { getToolCreditState, chargeCreditsAtomic } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -68,8 +68,13 @@ export async function POST(req) {
     const bytesOut = await output.save();
     const baseName = file.name.replace(/\.[^.]+$/, "");
 
-    user.credits = Math.max(0, user.credits - creditState.cost);
-    await user.save();
+    const updatedUser = await chargeCreditsAtomic(user._id, creditState.cost);
+    if (!updatedUser) {
+      return Response.json(
+        { error: "You're out of credits — someone (or another tab) may have used them first." },
+        { status: 402 }
+      );
+    }
 
     return new Response(bytesOut, {
       status: 200,
