@@ -56,6 +56,8 @@ export default function ChatDashboard({ user }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConversationId, setDeleteConversationId] = useState(null);
   const [shareInfo, setShareInfo] = useState({ isPublic: false, shareId: null });
   const [outlineTab, setOutlineTab] = useState("outline");
   const [error, setError] = useState("");
@@ -150,8 +152,15 @@ export default function ChatDashboard({ user }) {
     setAttachment(null);
   }
 
-  async function deleteConversation(e, id) {
+  function requestDeleteConversation(e, id) {
     e.stopPropagation();
+    setDeleteConversationId(id);
+    setDeleteModalOpen(true);
+  }
+
+  async function deleteConversation(id) {
+    setDeleteModalOpen(false);
+    setDeleteConversationId(null);
     setConversations((prev) => prev.filter((c) => c._id !== id));
     if (id === conversationId) startNewChat();
     try {
@@ -159,6 +168,11 @@ export default function ChatDashboard({ user }) {
     } catch (e) {
       fetchConversations();
     }
+  }
+
+  function cancelDelete() {
+    setDeleteModalOpen(false);
+    setDeleteConversationId(null);
   }
 
   async function sendPrompt(text, opts = {}) {
@@ -482,7 +496,7 @@ export default function ChatDashboard({ user }) {
                 <span
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => deleteConversation(e, c._id)}
+                  onClick={(e) => requestDeleteConversation(e, c._id)}
                   className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/60"
                   aria-label="Delete conversation"
                 >
@@ -776,6 +790,43 @@ export default function ChatDashboard({ user }) {
           </div>
         </div>
       </aside>
+
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-3xl border border-line bg-surface p-6 text-left shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-signal">Confirm delete</p>
+                <h3 className="mt-3 text-xl font-semibold text-paper">Are you sure you want to delete this chat?</h3>
+              </div>
+              <button
+                onClick={cancelDelete}
+                className="text-mist transition hover:text-paper"
+                aria-label="Close delete confirmation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-6 text-sm leading-6 text-mist/80">
+              This action cannot be undone. The chat and its messages will be removed from your conversation history.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                onClick={cancelDelete}
+                className="rounded-full border border-line bg-transparent px-4 py-2 text-sm text-mist transition hover:border-mist/40 hover:text-paper"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteConversation(deleteConversationId)}
+                className="rounded-full bg-red-500 px-4 py-2 text-sm font-semibold text-paper transition hover:bg-red-600"
+              >
+                Yes, delete it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShareModal
         open={shareModalOpen}
