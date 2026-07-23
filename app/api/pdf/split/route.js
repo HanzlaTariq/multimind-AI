@@ -1,6 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import { PDFDocument } from "pdf-lib";
+import { getToolCreditState } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -27,6 +30,22 @@ export async function POST(req) {
     return Response.json({ error: "File is too large — please use a PDF under 20MB" }, { status: 400 });
   }
 
+  await dbConnect();
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const creditState = getToolCreditState(user, "split-pdf");
+  if (!creditState.canUse) {
+    return Response.json(
+      {
+        error: `You need ${creditState.cost} credit${creditState.cost > 1 ? "s" : ""} for this tool. Upgrade your plan or wait for your next monthly reset.`,
+      },
+      { status: 402 }
+    );
+  }
+
   try {
     const bytes = await file.arrayBuffer();
     const source = await PDFDocument.load(bytes, { ignoreEncryption: true });
@@ -48,6 +67,9 @@ export async function POST(req) {
 
     const bytesOut = await output.save();
     const baseName = file.name.replace(/\.[^.]+$/, "");
+
+    user.credits = Math.max(0, user.credits - creditState.cost);
+    await user.save();
 
     return new Response(bytesOut, {
       status: 200,

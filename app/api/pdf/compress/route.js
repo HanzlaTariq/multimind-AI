@@ -1,8 +1,11 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import JSZip from "jszip";
+import { getToolCreditState } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -89,6 +92,22 @@ export async function POST(req) {
     return Response.json({ error: "File is too large — please use a file under 20MB" }, { status: 400 });
   }
 
+  await dbConnect();
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const creditState = getToolCreditState(user, "compress-pdf");
+  if (!creditState.canUse) {
+    return Response.json(
+      {
+        error: `You need ${creditState.cost} credit${creditState.cost > 1 ? "s" : ""} for this tool. Upgrade your plan or wait for your next monthly reset.`,
+      },
+      { status: 402 }
+    );
+  }
+
   const ext = getExt(file.name);
   const inputBytes = Buffer.from(await file.arrayBuffer());
 
@@ -121,6 +140,9 @@ export async function POST(req) {
       0,
       Math.round(((originalSize - compressedSize) / originalSize) * 100)
     );
+
+    user.credits = Math.max(0, user.credits - creditState.cost);
+    await user.save();
 
     return new Response(outputBytes, {
       status: 200,

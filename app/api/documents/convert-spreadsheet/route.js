@@ -1,6 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import * as XLSX from "xlsx";
+import { getToolCreditState } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -37,12 +40,31 @@ export async function POST(req) {
     return Response.json({ error: "File is too large — please use a file under 15MB" }, { status: 400 });
   }
 
+  await dbConnect();
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const creditState = getToolCreditState(user, "convert-spreadsheet");
+  if (!creditState.canUse) {
+    return Response.json(
+      {
+        error: `You need ${creditState.cost} credit${creditState.cost > 1 ? "s" : ""} for this tool. Upgrade your plan or wait for your next monthly reset.`,
+      },
+      { status: 402 }
+    );
+  }
+
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const output = XLSX.write(workbook, { bookType: target.bookType, type: "buffer" });
 
     const baseName = file.name.replace(/\.[^.]+$/, "");
+
+    user.credits = Math.max(0, user.credits - creditState.cost);
+    await user.save();
 
     return new Response(output, {
       status: 200,

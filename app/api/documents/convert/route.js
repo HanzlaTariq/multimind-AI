@@ -1,6 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import { convertFile } from "@/lib/cloudconvert";
+import { getToolCreditState } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // needs a Vercel plan that allows >10s function duration
@@ -28,6 +31,23 @@ export async function POST(req) {
   }
 
   const inputFormat = (file.name.split(".").pop() || "").toLowerCase();
+e  const toolId = formData.get("toolId") || "convert-document";
+
+  await dbConnect();
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const creditState = getToolCreditState(user, toolId);
+  if (!creditState.canUse) {
+    return Response.json(
+      {
+        error: `You need ${creditState.cost} credit${creditState.cost > 1 ? "s" : ""} for this tool. Upgrade your plan or wait for your next monthly reset.`,
+      },
+      { status: 402 }
+    );
+  }
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -37,6 +57,8 @@ export async function POST(req) {
       inputFormat,
       outputFormat,
     });
+    user.credits = Math.max(0, user.credits - creditState.cost);
+    await user.save();
     return Response.json(result);
   } catch (err) {
     console.error("Document conversion error:", err);

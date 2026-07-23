@@ -52,6 +52,7 @@ export default function DocumentConvertTool({
 
     try {
       const formData = new FormData();
+      formData.append("toolId", toolId);
       formData.append("file", file);
       formData.append("format", targetFormat);
       if (extraFieldName && extraValue) formData.append(extraFieldName, extraValue);

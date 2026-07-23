@@ -11,7 +11,7 @@ export default async function PdfToImagesPage() {
     <DocumentConvertTool
       title="PDF to Images"
       description="Export each page of a PDF as an image. Powered by CloudConvert — larger files may take a moment."
-      badge="Premium • via CloudConvert"
+      badge="2 credits • via CloudConvert"
       accept=".pdf"
       endpoint="/api/documents/convert"
       targetFormats={[

@@ -11,7 +11,7 @@ export default async function ConvertDocumentPage() {
     <DocumentConvertTool
       title="Convert Document"
       description="Convert between Word, PDF, and PowerPoint. Powered by CloudConvert — larger files may take up to a minute."
-      badge="Premium • via CloudConvert"
+      badge="2 credits • via CloudConvert"
       accept=".docx,.doc,.pdf,.pptx,.ppt,.odt,.rtf"
       endpoint="/api/documents/convert"
       targetFormats={[

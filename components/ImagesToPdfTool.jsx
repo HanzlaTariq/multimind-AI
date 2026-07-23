@@ -95,7 +95,7 @@ export default function ImagesToPdfTool() {
         <div className="mb-2 flex items-center gap-2">
           <h1 className="font-display text-2xl font-semibold text-paper">Images to PDF</h1>
           <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-            Free • Instant
+            1 credit • Instant
           </span>
         </div>
         <p className="text-sm text-mist">

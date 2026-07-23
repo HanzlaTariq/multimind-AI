@@ -11,7 +11,7 @@ export default async function ConvertImagePage() {
     <DocumentConvertTool
       title="Convert Image"
       description="Convert between JPG, PNG, WebP, and AVIF, with optional resizing."
-      badge="Free • Instant"
+      badge="1 credit • Instant"
       accept="image/*"
       endpoint="/api/documents/convert-image"
       targetFormats={[

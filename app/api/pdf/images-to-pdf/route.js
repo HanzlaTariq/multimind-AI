@@ -1,6 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import { PDFDocument } from "pdf-lib";
+import { getToolCreditState } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
@@ -27,6 +30,22 @@ export async function POST(req) {
     );
   }
 
+  await dbConnect();
+  const user = await User.findById(session.user.id);
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const creditState = getToolCreditState(user, "images-to-pdf");
+  if (!creditState.canUse) {
+    return Response.json(
+      {
+        error: `You need ${creditState.cost} credit${creditState.cost > 1 ? "s" : ""} for this tool. Upgrade your plan or wait for your next monthly reset.`,
+      },
+      { status: 402 }
+    );
+  }
+
   try {
     const pdfDoc = await PDFDocument.create();
 
@@ -40,6 +59,9 @@ export async function POST(req) {
     }
 
     const output = await pdfDoc.save();
+
+    user.credits = Math.max(0, user.credits - creditState.cost);
+    await user.save();
 
     return new Response(output, {
       status: 200,

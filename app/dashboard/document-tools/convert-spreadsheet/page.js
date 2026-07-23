@@ -11,7 +11,7 @@ export default async function ConvertSpreadsheetPage() {
     <DocumentConvertTool
       title="Convert Spreadsheet"
       description="Convert between XLSX, CSV, and ODS. Note: CSV export only includes the first sheet."
-      badge="Free • Instant"
+      badge="1 credit • Instant"
       accept=".xlsx,.xls,.csv,.ods"
       endpoint="/api/documents/convert-spreadsheet"
       targetFormats={[

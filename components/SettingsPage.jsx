@@ -305,6 +305,24 @@ function BillingTab() {
     Math.max(0, Math.round((1 - (settings.credits ?? 0) / currentTierCredits) * 100))
   );
 
+  const lastReset = settings.creditsResetAt ? new Date(settings.creditsResetAt) : null;
+  const nextResetDate = lastReset
+    ? new Date(lastReset.getTime() + 30 * 24 * 60 * 60 * 1000)
+    : null;
+  const nextResetLabel = nextResetDate
+    ? nextResetDate.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+  const nextResetTimeLabel = nextResetDate
+    ? nextResetDate.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
   async function handleUpgrade(planId) {
     setLoadingPlan(planId);
     setError("");
@@ -368,8 +386,13 @@ function BillingTab() {
           />
         </div>
         <p className="mt-2 text-xs text-mist">
-          Resets monthly. Each message uses credits based on which AI model answered it.
+          Credits refill automatically once a month. Each message uses credits based on which AI model answered it.
         </p>
+        {nextResetLabel && (
+          <p className="mt-2 text-xs text-mist">
+            Next reset: <span className="text-paper">{nextResetLabel} at {nextResetTimeLabel}</span>
+          </p>
+        )}
 
         {currentPlan !== "free" && (
           <button
