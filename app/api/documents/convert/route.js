@@ -31,7 +31,7 @@ export async function POST(req) {
   }
 
   const inputFormat = (file.name.split(".").pop() || "").toLowerCase();
-e  const toolId = formData.get("toolId") || "convert-document";
+  const toolId = formData.get("toolId") || "convert-document";
 
   await dbConnect();
   const user = await User.findById(session.user.id);
