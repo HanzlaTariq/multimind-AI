@@ -9,26 +9,37 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 export default function SignupPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setMessage("");
     setLoading(true);
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(otpSent ? { ...form, otp } : form),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
         setError(data.error || "Something went wrong");
+        setLoading(false);
+        return;
+      }
+
+      if (data.needsOtp) {
+        setOtpSent(true);
+        setMessage(data.message || "Verification code sent to your email.");
         setLoading(false);
         return;
       }
@@ -42,7 +53,7 @@ export default function SignupPage() {
       setLoading(false);
 
       if (signInRes?.error) {
-        setError("Account created — please log in.");
+        setError("Account created. Please log in.");
         router.push("/login");
         return;
       }
@@ -66,7 +77,11 @@ export default function SignupPage() {
         </Link>
 
         <h1 className="font-display text-2xl font-semibold text-paper">Create your account</h1>
-        <p className="mt-1.5 text-sm text-mist">Free forever plan, no card required.</p>
+        <p className="mt-1.5 text-sm text-mist">
+          {otpSent
+            ? "Enter the verification code we sent to your email."
+            : "Free forever plan, no card required."}
+        </p>
 
         <button
           type="button"
@@ -138,6 +153,31 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {otpSent && (
+            <div>
+              <label className="mb-1.5 block text-sm text-mist" htmlFor="otp">
+                Verification code
+              </label>
+              <input
+                id="otp"
+                type="text"
+                required
+                inputMode="numeric"
+                maxLength={6}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-center font-mono text-lg tracking-[0.35em] text-paper outline-none transition focus:border-signal"
+                placeholder="000000"
+              />
+            </div>
+          )}
+
+          {message && (
+            <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+              {message}
+            </p>
+          )}
+
           {error && (
             <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
               {error}
@@ -150,7 +190,7 @@ export default function SignupPage() {
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create account
+            {otpSent ? "Verify and create account" : "Send verification code"}
           </button>
         </form>
 

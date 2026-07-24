@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
 import User from "@/models/User";
+import { sendLowCreditEmailIfNeeded } from "@/lib/email";
 import { routeToProvider } from "@/lib/providers";
 import { creditsForPlan } from "@/lib/plans";
 
@@ -332,6 +333,7 @@ export async function POST(req) {
   if (!lastReset || now - lastReset > MS_PER_MONTH) {
     user.credits = creditsForPlan(user.plan);
     user.creditsResetAt = now;
+    user.lowCreditEmailSentAt = null;
     await user.save();
   }
 
@@ -391,6 +393,7 @@ export async function POST(req) {
   if (best.status === "ok") {
     user.credits = Math.max(0, user.credits - chosenProvider.creditCost);
     await user.save();
+    await sendLowCreditEmailIfNeeded(user);
   }
 
   const turn = {

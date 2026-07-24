@@ -35,6 +35,7 @@ const UserSchema = new mongoose.Schema(
     },
     credits: { type: Number, default: 60 },
     creditsResetAt: { type: Date, default: Date.now },
+    lowCreditEmailSentAt: { type: Date, default: null },
     recentTools: [
       {
         toolId: { type: String, required: true },

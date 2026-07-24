@@ -20,10 +20,12 @@
     "mongoose": "^8.5.1",
     "next": "14.2.35",
     "next-auth": "^4.24.7",
+    "nodemailer": "^7.0.13",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
+    "resend": "^6.18.0",
     "sharp": "^0.33.4",
     "stripe": "^16.2.0",
     "xlsx": "^0.18.5"
