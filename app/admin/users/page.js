@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, Loader2, X, ShieldCheck, ShieldBan, Trash2 } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  X,
+  ShieldCheck,
+  ShieldBan,
+  Trash2,
+  Download,
+  Mic,
+  Plus,
+  Minus,
+} from "lucide-react";
 
 const PLANS = ["free", "basic", "pro", "business"];
 
@@ -27,6 +38,68 @@ function EditUserDrawer({ user, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+
+  const [voices, setVoices] = useState(null); // null while loading
+  const [grantAmount, setGrantAmount] = useState("");
+  const [grantReason, setGrantReason] = useState("");
+  const [granting, setGranting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/users/${user._id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setVoices(data.user?.customVoices || []);
+      })
+      .catch(() => !cancelled && setVoices([]));
+    return () => {
+      cancelled = true;
+    };
+  }, [user._id]);
+
+  const applyGrant = async () => {
+    const amount = Number(grantAmount);
+    if (!amount) {
+      setError("Enter a non-zero amount");
+      return;
+    }
+    if (!grantReason.trim()) {
+      setError("Enter a reason for this adjustment");
+      return;
+    }
+    setGranting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/users/${user._id}/credit-grant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, reason: grantReason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to apply");
+      setCredits(data.credits);
+      setGrantAmount("");
+      setGrantReason("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGranting(false);
+    }
+  };
+
+  const removeVoice = async (voiceId) => {
+    if (!confirm("Delete this cloned voice?")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${user._id}/voices/${voiceId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete voice");
+      setVoices((prev) => prev.filter((v) => v.voiceId !== voiceId));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -155,6 +228,72 @@ function EditUserDrawer({ user, onClose, onSaved }) {
               />
             </div>
           )}
+
+          <div className="rounded-lg border border-line bg-surface p-3">
+            <p className="mb-2 text-xs font-medium text-mist">Grant / deduct credits</p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+                placeholder="e.g. 500 or -100"
+                className="w-28 rounded-lg border border-line bg-surface2 px-2 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+              />
+              <input
+                type="text"
+                value={grantReason}
+                onChange={(e) => setGrantReason(e.target.value)}
+                placeholder="Reason (required)"
+                className="flex-1 rounded-lg border border-line bg-surface2 px-2 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+              />
+              <button
+                onClick={applyGrant}
+                disabled={granting}
+                className="flex items-center gap-1 rounded-lg bg-signal/10 px-3 py-1.5 text-xs font-semibold text-signal transition hover:bg-signal/20 disabled:opacity-50"
+              >
+                {granting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : Number(grantAmount) < 0 ? (
+                  <Minus className="h-3.5 w-3.5" />
+                ) : (
+                  <Plus className="h-3.5 w-3.5" />
+                )}
+                Apply
+              </button>
+            </div>
+            <p className="mt-1.5 text-[11px] text-mist/70">
+              Logged separately from direct credit edits, with the reason attached.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-line bg-surface p-3">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-mist">
+              <Mic className="h-3.5 w-3.5" />
+              Cloned TTS voices
+            </p>
+            {voices === null ? (
+              <Loader2 className="h-4 w-4 animate-spin text-mist" />
+            ) : voices.length === 0 ? (
+              <p className="text-xs text-mist/70">No cloned voices.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {voices.map((v) => (
+                  <li
+                    key={v.voiceId}
+                    className="flex items-center justify-between rounded-lg bg-surface2 px-2.5 py-1.5 text-xs"
+                  >
+                    <span className="text-paper">{v.name}</span>
+                    <button
+                      onClick={() => removeVoice(v.voiceId)}
+                      className="text-mist transition hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         <div className="mt-8 flex items-center gap-3">
@@ -260,6 +399,16 @@ export default function AdminUsersPage() {
             </option>
           ))}
         </select>
+        <a
+          href={`/api/admin/users/export?${new URLSearchParams({
+            ...(q ? { q } : {}),
+            ...(planFilter ? { plan: planFilter } : {}),
+          })}`}
+          className="flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-mist transition hover:text-paper"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </a>
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
