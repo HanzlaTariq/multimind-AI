@@ -40,6 +40,11 @@ const UserSchema = new mongoose.Schema(
     credits: { type: Number, default: 60 },
     creditsResetAt: { type: Date, default: Date.now },
     lowCreditEmailSentAt: { type: Date, default: null },
+
+    // Admin panel
+    isAdmin: { type: Boolean, default: false },
+    banned: { type: Boolean, default: false },
+    bannedReason: { type: String, default: "" },
     recentTools: [
       {
         toolId: { type: String, required: true },
