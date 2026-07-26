@@ -1,107 +1,140 @@
 import Link from "next/link";
-import { Zap, Brain, Layers, ArrowRight, Check } from "lucide-react";
+import {
+  ArrowRight,
+  Bot,
+  Brain,
+  Check,
+  Gauge,
+  Layers,
+  MessageSquareText,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LiveDemo from "@/components/LiveDemo";
 
 const MODELS = [
   {
+    name: "ChatGPT",
+    icon: Bot,
+    color: "text-signal",
+    border: "border-signal/30",
+    tagline: "Creative + capable",
+    desc: "Great for writing, coding help, planning, and practical problem solving.",
+  },
+  {
+    name: "Claude",
+    icon: Sparkles,
+    color: "text-paper",
+    border: "border-paper/20",
+    tagline: "Careful analysis",
+    desc: "Strong for long-form thinking, summaries, and nuanced explanations.",
+  },
+  {
     name: "Groq",
     icon: Zap,
     color: "text-groq",
     border: "border-groq/30",
-    glow: "hover:shadow-groq/10",
-    tagline: "The sprinter",
-    desc: "Llama 3.3 70B running on Groq's LPU hardware. First to respond, every time — usually under half a second.",
+    tagline: "Fast answers",
+    desc: "Llama 3.3 70B on Groq hardware for low-latency first drafts.",
   },
   {
     name: "Gemini",
     icon: Layers,
     color: "text-gemini",
     border: "border-gemini/30",
-    glow: "hover:shadow-gemini/10",
-    tagline: "The generalist",
-    desc: "Google's 2.0 Flash model. Balanced, well-rounded answers with strong general knowledge and reasoning.",
+    tagline: "Balanced reasoning",
+    desc: "A strong generalist for everyday questions, planning, and writing.",
   },
   {
     name: "DeepSeek",
     icon: Brain,
     color: "text-deepseek",
     border: "border-deepseek/30",
-    glow: "hover:shadow-deepseek/10",
-    tagline: "The thinker",
-    desc: "Takes its time to reason through harder problems, and it shows — the most thorough of the three.",
+    tagline: "Deeper analysis",
+    desc: "Useful when the task needs careful reasoning and a more thorough pass.",
   },
 ];
 
-const STATS = [
-  { value: "3", label: "AI models compared every time" },
-  { value: "<1s", label: "Fastest model typically responds" },
-  { value: "100%", label: "Transparent — see who answered" },
+const MODEL_CLOUD = [
+  "ChatGPT",
+  "Claude",
+  "Gemini",
+  "Groq",
+  "DeepSeek",
+  "Llama",
+  "Mistral",
+  "Perplexity",
+  "More soon",
 ];
 
-const STEPS = [
+const FEATURES = [
   {
-    n: "01",
+    icon: MessageSquareText,
     title: "Ask once",
-    desc: "Type your question into a single box, same as any chat app you already know.",
+    desc: "Send one prompt and let MultiMind route it to the best available AI models at the same time.",
   },
   {
-    n: "02",
-    title: "Three models answer in parallel",
-    desc: "Gemini, Groq, and DeepSeek all receive your prompt at the same instant, no queueing.",
+    icon: Gauge,
+    title: "Compare quietly",
+    desc: "The app watches speed, completeness, and quality so you do not have to juggle tabs.",
   },
   {
-    n: "03",
-    title: "Get the best one",
-    desc: "MultiMind picks the strongest answer automatically, so you don't have to compare manually.",
+    icon: ShieldCheck,
+    title: "Keep context",
+    desc: "Your conversations stay tied to your account, with history available when you need it.",
   },
 ];
 
-const PLANS = [
+const PLAN_TIERS = [
   {
     name: "Free",
     price: "$0",
     period: "forever",
-    features: ["20 parallel queries / day", "All 3 models", "7-day conversation history"],
+    features: ["60 starter credits", "Smart model routing", "Conversation history"],
     cta: "Start free",
     highlighted: false,
   },
   {
-    name: "Pro",
-    price: "$12",
+    name: "Basic",
+    price: "$9.99",
     period: "/ month",
-    features: [
-      "Unlimited parallel queries",
-      "All 3 models, priority routing",
-      "Unlimited conversation history",
-      "Export conversations",
-    ],
-    cta: "Go Pro",
+    features: ["1,500 credits/month", "All core tools", "Full conversation history"],
+    cta: "Upgrade to Basic",
+    highlighted: false,
+  },
+  {
+    name: "Pro",
+    price: "$24.99",
+    period: "/ month",
+    features: ["8,000 credits/month", "Priority routing", "PDF export"],
+    cta: "Upgrade to Pro",
     highlighted: true,
+  },
+  {
+    name: "Business",
+    price: "$59.99",
+    period: "/ month",
+    features: ["30,000 credits/month", "Highest priority", "Everything in Pro"],
+    cta: "Upgrade to Business",
+    highlighted: false,
   },
 ];
 
 const FAQS = [
   {
-    q: "How does MultiMind pick the best answer?",
-    a: "Every prompt is sent to Gemini, Groq, and DeepSeek at the same time. A lightweight judging step then compares whichever answers came back successfully and picks the strongest one — you just see the winner, not three separate replies to sort through yourself.",
+    q: "How does MultiMind choose an answer?",
+    a: "Your prompt is sent to supported models in parallel. MultiMind then surfaces the strongest successful response.",
   },
   {
-    q: "What happens if one of the models is down?",
-    a: "MultiMind quietly falls back to whichever models responded successfully. You won't see error messages from individual providers — only a clean answer, or a short note if all three happen to be unavailable at once.",
+    q: "What happens if a model is unavailable?",
+    a: "MultiMind falls back to the models that respond successfully and keeps the experience clean.",
   },
   {
-    q: "Does MultiMind remember earlier messages in a conversation?",
-    a: "Yes. Each conversation keeps its history, and that context is passed to all three models on every new message, so follow-up questions work the way you'd expect.",
-  },
-  {
-    q: "Is my data private?",
-    a: "Your conversations are tied to your account and stored securely. We don't sell your data or use it to train models beyond what each underlying provider's API terms specify.",
-  },
-  {
-    q: "Can I cancel Pro anytime?",
-    a: "Yes, there's no lock-in — you can cancel from your account settings at any time and you'll keep Pro access until the end of your current billing period.",
+    q: "Can I manage my plan later?",
+    a: "Yes. Paid users can manage billing from the settings page at any time.",
   },
 ];
 
@@ -110,36 +143,32 @@ export default function Home() {
     <div className="min-h-screen bg-ink pt-20 md:pt-0">
       <Navbar />
 
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-6 pb-10 pt-16 sm:pt-24">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-signal" />
-              <span className="font-mono text-xs text-mist">3 models · 1 prompt · 0 guesswork</span>
+      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
+        <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+          <div className="max-w-xl">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-mist">
+              <Sparkles className="h-3.5 w-3.5 text-signal" />
+              <span className="font-mono">All major models. 1 prompt. Better answers.</span>
             </div>
-            <h1 className="font-display text-4xl font-semibold leading-[1.1] tracking-tight text-paper sm:text-5xl">
-              One prompt.
-              <br />
-              Three minds.
-              <br />
-              <span className="text-signal">No blind trust.</span>
+
+            <h1 className="font-display text-4xl font-semibold leading-tight text-paper sm:text-5xl">
+              One clean workspace for every leading AI.
             </h1>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-mist">
-              Every AI has blind spots. MultiMind sends your question to Gemini, Groq, and
-              DeepSeek at the same time, then hands you back the single best answer.
+            <p className="mt-4 text-sm leading-relaxed text-mist sm:text-base">
+              MultiMind brings ChatGPT, Claude, Gemini, Groq, DeepSeek, and future models into one focused interface so you can ask once and get the strongest answer.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3 text-sm font-semibold text-ink transition hover:brightness-110"
+                className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-ink transition hover:brightness-110"
               >
-                Try it free
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                Start free
+                <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm font-medium text-paper transition hover:border-mist"
+                className="rounded-full border border-line px-5 py-2.5 text-sm font-medium text-paper transition hover:border-mist"
               >
                 Log in
               </Link>
@@ -147,152 +176,151 @@ export default function Home() {
           </div>
 
           <LiveDemo />
-        </div>
-      </section>
+        </section>
 
-      {/* Stats bar */}
-      <section className="border-y border-line/60 bg-surface/30">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 divide-y divide-line/60 sm:grid-cols-3 sm:divide-x sm:divide-y-0 px-6">
-          {STATS.map((s) => (
-            <div key={s.label} className="flex flex-col items-center gap-1 py-8 text-center sm:px-6">
-              <span className="font-display text-3xl font-semibold text-signal">{s.value}</span>
-              <span className="text-sm text-mist">{s.label}</span>
+        <section id="models" className="mt-14 border-t border-line pt-10">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-widest text-mist">Models</p>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-paper">
+                Built for the whole model universe.
+              </h2>
             </div>
-          ))}
-        </div>
-      </section>
+            <p className="max-w-sm text-sm leading-relaxed text-mist">
+              Start with today&apos;s supported providers and keep room for every model you add next.
+            </p>
+          </div>
 
-      {/* Models */}
-      <section id="models" className="py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-mist">The lineup</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold text-paper">
-            Three different personalities, one console.
-          </h2>
-
-          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             {MODELS.map((m) => (
-              <div
-                key={m.name}
-                className={`rounded-2xl border ${m.border} bg-surface p-6 shadow-lg shadow-black/20 transition ${m.glow}`}
-              >
-                <m.icon className={`h-6 w-6 ${m.color}`} />
-                <h3 className="mt-4 font-display text-xl font-semibold text-paper">{m.name}</h3>
+              <div key={m.name} className={`rounded-2xl border ${m.border} bg-surface p-5`}>
+                <m.icon className={`h-5 w-5 ${m.color}`} />
+                <h3 className="mt-4 font-display text-lg font-semibold text-paper">{m.name}</h3>
                 <p className={`mt-1 font-mono text-xs ${m.color}`}>{m.tagline}</p>
                 <p className="mt-3 text-sm leading-relaxed text-mist">{m.desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* How it works */}
-      <section id="how" className="border-t border-line/60 bg-surface/30 py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-mist">Process</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold text-paper">
-            From question to answer in three steps.
+          <div className="mt-5 rounded-2xl border border-line bg-surface p-5">
+            <p className="text-sm font-medium text-paper">
+              Designed to expand beyond the first providers.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {MODEL_CLOUD.map((model) => (
+                <span
+                  key={model}
+                  className="rounded-full border border-line bg-ink/40 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest text-mist"
+                >
+                  {model}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="how" className="mt-14 border-t border-line pt-10">
+          <p className="font-mono text-xs uppercase tracking-widest text-mist">Workflow</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-paper">
+            Built like a focused tool, not a guessing game.
           </h2>
 
-          <div className="mt-10 grid gap-8 sm:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="border-t border-line pt-5">
-                <span className="font-mono text-sm text-mist/60">{s.n}</span>
-                <h3 className="mt-2 font-display text-lg font-semibold text-paper">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-mist">{s.desc}</p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {FEATURES.map((feature) => (
+              <div key={feature.title} className="rounded-2xl border border-line bg-surface p-5">
+                <feature.icon className="h-5 w-5 text-signal" />
+                <h3 className="mt-4 font-display text-base font-semibold text-paper">
+                  {feature.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-mist">{feature.desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-20">
-        <div className="mx-auto max-w-6xl px-6">
-          <p className="font-mono text-xs uppercase tracking-widest text-mist">Pricing</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold text-paper">
-            Start free. Upgrade when you outgrow it.
-          </h2>
+        <section id="pricing" className="mt-14 border-t border-line pt-10">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-widest text-mist">Pricing</p>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-paper">
+                Plans that match settings.
+              </h2>
+            </div>
+            <Link
+              href="/signup"
+              className="inline-flex w-fit items-center gap-2 rounded-full border border-line px-4 py-2 text-xs font-medium text-paper transition hover:border-mist"
+            >
+              View account options
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 sm:max-w-2xl">
-            {PLANS.map((p) => (
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PLAN_TIERS.map((plan) => (
               <div
-                key={p.name}
-                className={`rounded-2xl border p-7 ${
-                  p.highlighted
-                    ? "border-signal bg-surface shadow-xl shadow-signal/10"
+                key={plan.name}
+                className={`rounded-2xl border p-5 ${
+                  plan.highlighted
+                    ? "border-signal bg-surface shadow-lg shadow-signal/10"
                     : "border-line bg-surface"
                 }`}
               >
-                <h3 className="font-display text-lg font-semibold text-paper">{p.name}</h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="font-display text-3xl font-semibold text-paper">{p.price}</span>
-                  <span className="text-sm text-mist">{p.period}</span>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-lg font-semibold text-paper">{plan.name}</h3>
+                  {plan.highlighted && (
+                    <span className="rounded-full bg-signal/15 px-2.5 py-0.5 text-[10px] font-medium text-signal">
+                      Popular
+                    </span>
+                  )}
                 </div>
-                <ul className="mt-5 space-y-2.5">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-mist">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
-                      {f}
+                <div className="mt-2 flex items-baseline gap-1">
+                  <span className="font-display text-2xl font-semibold text-paper">
+                    {plan.price}
+                  </span>
+                  <span className="text-xs text-mist">{plan.period}</span>
+                </div>
+                <ul className="mt-4 space-y-1.5">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-xs text-mist">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
+                      {feature}
                     </li>
                   ))}
                 </ul>
                 <Link
                   href="/signup"
-                  className={`mt-7 block rounded-full px-5 py-2.5 text-center text-sm font-semibold transition ${
-                    p.highlighted
+                  className={`mt-5 block rounded-full px-4 py-2 text-center text-xs font-semibold transition ${
+                    plan.highlighted
                       ? "bg-signal text-ink hover:brightness-110"
                       : "border border-line text-paper hover:border-mist"
                   }`}
                 >
-                  {p.cta}
+                  {plan.cta}
                 </Link>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FAQ */}
-      <section id="faq" className="border-t border-line/60 bg-surface/30 py-20">
-        <div className="mx-auto max-w-3xl px-6">
+        <section id="faq" className="mt-14 border-t border-line py-10">
           <p className="font-mono text-xs uppercase tracking-widest text-mist">FAQ</p>
-          <h2 className="mt-2 font-display text-3xl font-semibold text-paper">
-            Questions, answered.
+          <h2 className="mt-2 font-display text-2xl font-semibold text-paper">
+            Quick answers.
           </h2>
 
-          <div className="mt-8 divide-y divide-line">
-            {FAQS.map((f) => (
-              <details key={f.q} className="group py-5">
+          <div className="mt-5 divide-y divide-line rounded-2xl border border-line bg-surface px-5">
+            {FAQS.map((faq) => (
+              <details key={faq.q} className="group py-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-medium text-paper">
-                  {f.q}
+                  {faq.q}
                   <span className="shrink-0 text-mist transition group-open:rotate-45">+</span>
                 </summary>
-                <p className="mt-3 text-sm leading-relaxed text-mist">{f.a}</p>
+                <p className="mt-3 text-sm leading-relaxed text-mist">{faq.a}</p>
               </details>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Closing CTA */}
-      <section className="py-20">
-        <div className="mx-auto max-w-4xl rounded-3xl border border-line bg-surface px-8 py-14 text-center sm:px-14">
-          <h2 className="font-display text-3xl font-semibold text-paper sm:text-4xl">
-            Stop guessing which AI to ask.
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-mist">
-            Let three models compete on every question, and get the best answer without lifting a finger.
-          </p>
-          <Link
-            href="/signup"
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-signal px-7 py-3 text-sm font-semibold text-ink transition hover:brightness-110"
-          >
-            Try MultiMind free
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <Footer />
     </div>

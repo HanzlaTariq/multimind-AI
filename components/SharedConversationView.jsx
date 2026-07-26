@@ -116,7 +116,7 @@ export default function SharedConversationView({ conversation }) {
 
         <div className="mt-14 flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface px-6 py-10 text-center">
           <p className="font-display text-lg font-semibold text-paper">
-            Get answers like this from three AI models at once.
+            Get answers like this from leading AI models in one place.
           </p>
           <Link
             href="/signup"

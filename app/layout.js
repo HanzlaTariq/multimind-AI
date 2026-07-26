@@ -32,9 +32,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata = {
-  title: "MultiMind — Three minds, one answer",
+  title: "MultiMind - All your AI models in one workspace",
   description:
-    "Ask once. Gemini, Groq, and DeepSeek answer in parallel, side by side, so you can see where they agree and where they don't.",
+    "Ask once and route work across ChatGPT, Claude, Gemini, Groq, DeepSeek, and future AI models from one focused workspace.",
 };
 
 export default async function RootLayout({ children }) {

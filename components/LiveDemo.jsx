@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 
 const PROMPT = "Explain quantum entanglement in two sentences.";
+const PROVIDER_QUEUE = ["ChatGPT", "Claude", "Gemini", "Groq", "DeepSeek"];
 
 const COLUMNS = [
   {
@@ -132,6 +133,27 @@ export default function LiveDemo() {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface2/60 p-4 shadow-2xl shadow-black/40 sm:p-6">
+      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mist">
+            Sample model race
+          </p>
+          <p className="mt-1 text-sm font-medium text-paper">
+            MultiMind can route across a growing provider stack.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {PROVIDER_QUEUE.map((provider) => (
+            <span
+              key={provider}
+              className="rounded-full border border-line bg-ink/40 px-2.5 py-1 font-mono text-[10px] text-mist"
+            >
+              {provider}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-line bg-ink/60 px-4 py-2.5">
         <span className="font-mono text-xs text-mist">You asked</span>
         <span className="h-3 w-px bg-line" />
