@@ -251,7 +251,7 @@ export default function ChatDashboard({ user }) {
   const initials = user?.name?.[0]?.toUpperCase() || "U";
 
   return (
-    <div className="flex h-screen bg-ink">
+    <div className="flex h-dvh bg-ink">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}

@@ -37,6 +37,18 @@ export const metadata = {
     "Ask once and route work across ChatGPT, Claude, Gemini, Groq, DeepSeek, and future AI models from one focused workspace.",
 };
 
+// Without this, Android Chrome treats the on-screen keyboard as an overlay
+// that sits on top of the page — so a bottom-pinned element like the chat
+// input doesn't get pushed up above it and ends up rendered partly behind/
+// clipped by the keyboard. "resizes-content" tells the browser to shrink
+// the layout viewport instead, so h-dvh containers (see ChatDashboard)
+// actually resize and the input stays visible above the keyboard.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
+
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions);
 
