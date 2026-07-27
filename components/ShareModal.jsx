@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Copy, Check, Globe, Lock, MessageCircle, Mail } from "lucide-react";
+import Toggle from "@/components/settings/Toggle";
 
 export default function ShareModal({ open, onClose, conversationId, shareInfo, onShareInfoChange }) {
   const [loading, setLoading] = useState(false);
@@ -75,20 +76,9 @@ export default function ShareModal({ open, onClose, conversationId, shareInfo, o
               {isPublic ? "Anyone with the link can view" : "Only you can view"}
             </p>
           </div>
-          <button
-            onClick={() => handleToggle(!isPublic)}
-            disabled={loading}
-            className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60 ${
-              isPublic ? "bg-signal" : "bg-surface2"
-            }`}
-            aria-pressed={isPublic}
-          >
-            <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-ink transition-transform ${
-                isPublic ? "translate-x-5" : "translate-x-0.5"
-              }`}
-            />
-          </button>
+          <div className={loading ? "pointer-events-none opacity-60" : ""}>
+            <Toggle checked={isPublic} onChange={(v) => handleToggle(v)} />
+          </div>
         </div>
 
         {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
