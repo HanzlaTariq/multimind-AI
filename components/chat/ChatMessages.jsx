@@ -1,12 +1,13 @@
 // components/chat/ChatMessages.jsx
-import { FileText } from "lucide-react";
 import AnswerBubble from "@/components/AnswerBubble";
+import UserMessageBubble from "./UserMessageBubble";
 
 export default function ChatMessages({
   turns,
   pending,
   regeneratingIndex,
   onRegenerate,
+  onEditPrompt,
   onTogglePin,
   conversationId,
   temporaryMode,
@@ -28,6 +29,7 @@ export default function ChatMessages({
       <div className="mx-auto max-w-2xl space-y-8">
         {turns.map((turn, i) => {
           const isLastPending = pending && i === turns.length - 1;
+          const canEditOrRetry = !!turn.best && pending === false && regeneratingIndex === null;
 
           return (
             <div
@@ -36,21 +38,14 @@ export default function ChatMessages({
               className={`${settings.reduceMotion ? "" : "animate-rise"} scroll-mt-20 space-y-3`}
             >
               {/* User message */}
-              <div className="flex justify-end">
-                <div className="flex max-w-[85%] flex-col items-end gap-1.5 sm:max-w-[75%]">
-                  {turn.attachmentName && (
-                    <div className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-mist">
-                      <FileText className="h-3 w-3" />
-                      {turn.attachmentName}
-                    </div>
-                  )}
-                  <div
-                    className={`rounded-2xl rounded-tr-sm bg-surface px-4 py-2.5 text-[15px] text-paper ${fontClass}`}
-                  >
-                    {turn.prompt}
-                  </div>
-                </div>
-              </div>
+              <UserMessageBubble
+                turn={turn}
+                index={i}
+                fontClass={fontClass}
+                canEditOrRetry={canEditOrRetry}
+                onEditPrompt={onEditPrompt}
+                onRetry={turn.best ? () => onRegenerate(i) : null}
+              />
 
               {/* AI response */}
               <AnswerBubble

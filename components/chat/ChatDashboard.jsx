@@ -165,6 +165,52 @@ export default function ChatDashboard({ user }) {
     await sendPrompt(text, opts);
   }
 
+  async function handleEditPrompt(index, newText) {
+    if (!newText.trim() || pending || regeneratingIndex !== null) return;
+
+    const truncated = turns.slice(0, index);
+    setError("");
+    setPending(true);
+    setTurns([
+      ...truncated,
+      { prompt: newText, responses: [], _pendingType: "text" },
+    ]);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: newText,
+          conversationId,
+          editIndex: index,
+          temporary: temporaryMode,
+          clientHistory: temporaryMode
+            ? truncated.map((t) => ({ prompt: t.prompt, answer: t.best?.text || "" }))
+            : undefined,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Couldn't resend — please try again");
+        setTurns(truncated);
+        setPending(false);
+        return;
+      }
+
+      alreadyShownRef.current.delete(index);
+      setConversationId(data.conversationId);
+      setTurns([...truncated, data.turn]);
+      if (!temporaryMode) fetchConversations();
+    } catch (err) {
+      setError("Network error — please try again");
+      setTurns(truncated);
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function handleRegenerate(index) {
     const turn = turns[index];
     if (!turn || regeneratingIndex !== null) return;
@@ -318,6 +364,7 @@ export default function ChatDashboard({ user }) {
               pending={pending}
               regeneratingIndex={regeneratingIndex}
               onRegenerate={handleRegenerate}
+              onEditPrompt={handleEditPrompt}
               onTogglePin={handleTogglePin}
               conversationId={conversationId}
               temporaryMode={temporaryMode}

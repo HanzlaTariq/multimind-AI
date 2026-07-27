@@ -253,7 +253,7 @@ export async function POST(req) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { prompt, conversationId, attachment, temporary, clientHistory } = await req.json();
+  const { prompt, conversationId, attachment, temporary, clientHistory, editIndex } = await req.json();
 
   if ((!prompt || !prompt.trim()) && !attachment?.content) {
     return Response.json({ error: "Prompt cannot be empty" }, { status: 400 });
@@ -306,7 +306,11 @@ export async function POST(req) {
       user: session.user.id,
     });
     if (existingConversation) {
-      history = existingConversation.turns.map((t) => ({
+      const priorTurns =
+        typeof editIndex === "number" && editIndex >= 0
+          ? existingConversation.turns.slice(0, editIndex)
+          : existingConversation.turns;
+      history = priorTurns.map((t) => ({
         prompt: t.prompt,
         answer: t.best?.text || "",
       }));
@@ -352,6 +356,9 @@ export async function POST(req) {
 
   let conversation = existingConversation;
   if (conversation) {
+    if (typeof editIndex === "number" && editIndex >= 0) {
+      conversation.turns = conversation.turns.slice(0, editIndex);
+    }
     conversation.turns.push(turn);
     await conversation.save();
   } else {
