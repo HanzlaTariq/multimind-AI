@@ -1,6 +1,6 @@
 # MultiMind — Multi-AI Aggregator (Next.js)
 
-Aik prompt bhejo, teen AI models (Gemini, Groq, DeepSeek) parallel me respond karti hain, side-by-side compare karo. Full auth (Google + email/password), MongoDB me har conversation save hoti hai.
+Aik prompt bhejo — MultiMind har message ke liye khud smart routing se best-fit provider choose karta hai (available providers me se, jinke API keys set hain: Groq, Gemini, DeepSeek, Grok, ChatGPT, Claude), taake har query sabse suitable aur affordable model se answer ho, sab models ko parallel call kiye baghair. Full auth (Google + email/password), MongoDB me har conversation save hoti hai.
 
 ## Stack
 
@@ -8,7 +8,7 @@ Aik prompt bhejo, teen AI models (Gemini, Groq, DeepSeek) parallel me respond ka
 - **NextAuth.js** — Google OAuth + Credentials (email/password with bcrypt)
 - **MongoDB + Mongoose** — users aur conversations store karne ke liye
 - **Tailwind CSS** — custom dark theme, per-model accent colors
-- **Gemini / Groq / DeepSeek APIs** — `Promise.all` se parallel calls
+- **Gemini / Groq / DeepSeek / Grok / ChatGPT / Claude APIs** — smart single-provider routing (`lib/providers.js`), sirf configured API keys wale providers se
 
 ## Setup (local)
 
@@ -51,7 +51,7 @@ app/
   api/
     auth/[...nextauth]/    → NextAuth handler
     auth/register/         → Signup endpoint (bcrypt hash + save to Mongo)
-    chat/                  → Calls Gemini + Groq + DeepSeek in parallel, saves turn
+    chat/                  → Routes to the best-fit configured provider, saves turn
     conversations/         → List / fetch / delete saved conversations
 components/
   ChatDashboard.jsx        → Main chat UI (sidebar + 3-column responses)

@@ -3,9 +3,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
 import User from "@/models/User";
-import { sendLowCreditEmailIfNeeded } from "@/lib/email";
 import { routeToProvider } from "@/lib/providers";
-import { creditsForPlan } from "@/lib/plans";
+import { creditsForPlan, chargeCreditsAtomic } from "@/lib/plans";
 
 const BASE_SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot.
 
@@ -35,18 +34,7 @@ Rules:
 - If the user asks for a riddle, provide a fun, appropriate riddle in the same language and script they used.
 - If the user asks for a poem, provide a short, appropriate poem in the same language and script they used.
 - If the user asks for a story, provide a short, appropriate story in the same language and script they used.
-- If the user engages in dirty talk, vulgar language, sexual harassment, or inappropriate comments (in any language — English, Urdu, Roman Urdu, etc.), respond strictly in the same language they used with a sharp, roasting reply that embarrasses them and strongly discourages repeating it. Use advanced-level, creative gaaliyan and savage roasts. Never engage with, continue, or entertain the dirty talk. Examples of strong responses:
-
-English user does gandi baat:
-"Bro, go wash your mouth with soap and then touch some grass. Your brain is so fried that even a toaster has more personality. Tere jaise logon ke wajah se internet ka reputation kharab hota hai. Go touch your mom and ask her where she went wrong raising you. Ab serious baat kar, warna block."
-
-Roman Urdu / Hinglish user:
-"Arre gandu, gandi baatein karne aaya hai? Tere ghar mein maa behen nahi hai kya? Sharam naam ki cheez bhi hai ya bilkul khatam ho gayi? Dimag mein keeda laga hua hai kya? Agar itni hi hawa chadhi hai to apni behen ko leke jaake maze le, yahan mat bakchodi kar. Hanzla ko apna baap bana le, wo tujhe tameez sikha dega, allu ke pathe. Ab aage se knowledge ke baare mein baat kar, warna muh pe thappad maar ke tameez sikha dunga."
-
-Pure Urdu user:
-"بے شرم، گندی باتیں کرنے آیا ہے؟ گھر میں ماں بہن نہیں ہیں کیا؟ شرم نام کی کوئی چیز باقی ہے بھی یا مکمل طور پر ختم ہو گئی؟ دماغ میں کیڑا لگا ہوا ہے؟ اگر اتنی ہی ہوا چڑھی ہے تو اپنی بہن کے ساتھ جا کے مزے لے، یہاں مت بکواس کر۔ اب آگے سے علم کی بات کر، ورنہ منہ پر تھپڑ مار کے تمیز سکھا دوں گا۔"
-
-Keep the tone funny + savage so the user feels embarrassed and stops.
+- If the user engages in dirty talk, vulgar language, sexual harassment, or inappropriate comments (in any language — English, Urdu, Roman Urdu, etc.), do not continue or entertain it. Respond briefly and firmly, in the same language/script they used, setting a clear boundary (e.g. "I'm not going to engage with that — let's keep things respectful. Happy to help with something else."). Do not use insults, profanity, or sexual content of any kind in the response, even as a "roast".
 `;
 
 function buildSystemPrompt(profile) {
@@ -99,7 +87,10 @@ async function callGemini(prompt, history, systemPrompt) {
   }
 }
 
-async function callGroq(prompt, history, systemPrompt) {
+// Groq, DeepSeek, Grok, and ChatGPT all speak the same OpenAI-style
+// chat-completions format, so a single generic caller covers all four —
+// only the endpoint URL, model name, API key, and result label differ.
+async function callOpenAICompatible({ modelLabel, url, model, apiKey }, prompt, history, systemPrompt) {
   const start = Date.now();
   try {
     const messages = [{ role: "system", content: systemPrompt }];
@@ -109,64 +100,54 @@ async function callGroq(prompt, history, systemPrompt) {
     }
     messages.push({ role: "user", content: prompt });
 
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages,
-      }),
+      body: JSON.stringify({ model, messages }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || "Groq request failed");
+    if (!res.ok) throw new Error(data?.error?.message || `${modelLabel} request failed`);
     const text = data?.choices?.[0]?.message?.content || "";
-    return { model: "groq", text, latencyMs: Date.now() - start, status: "ok" };
+    return { model: modelLabel, text, latencyMs: Date.now() - start, status: "ok" };
   } catch (err) {
     return {
-      model: "groq",
-      text: err.message || "Groq failed to respond",
+      model: modelLabel,
+      text: err.message || `${modelLabel} failed to respond`,
       latencyMs: Date.now() - start,
       status: "error",
     };
   }
 }
 
-async function callDeepSeek(prompt, history, systemPrompt) {
-  const start = Date.now();
-  try {
-    const messages = [{ role: "system", content: systemPrompt }];
-    for (const h of history) {
-      messages.push({ role: "user", content: h.prompt });
-      if (h.answer) messages.push({ role: "assistant", content: h.answer });
-    }
-    messages.push({ role: "user", content: prompt });
+function callGroq(prompt, history, systemPrompt) {
+  return callOpenAICompatible(
+    {
+      modelLabel: "groq",
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      model: "llama-3.3-70b-versatile",
+      apiKey: process.env.GROQ_API_KEY,
+    },
+    prompt,
+    history,
+    systemPrompt
+  );
+}
 
-    const res = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || "DeepSeek request failed");
-    const text = data?.choices?.[0]?.message?.content || "";
-    return { model: "deepseek", text, latencyMs: Date.now() - start, status: "ok" };
-  } catch (err) {
-    return {
-      model: "deepseek",
-      text: err.message || "DeepSeek failed to respond",
-      latencyMs: Date.now() - start,
-      status: "error",
-    };
-  }
+function callDeepSeek(prompt, history, systemPrompt) {
+  return callOpenAICompatible(
+    {
+      modelLabel: "deepseek",
+      url: "https://api.deepseek.com/chat/completions",
+      model: "deepseek-chat",
+      apiKey: process.env.DEEPSEEK_API_KEY,
+    },
+    prompt,
+    history,
+    systemPrompt
+  );
 }
 
 // Placeholder providers — inactive until their API key is set in .env, at
@@ -174,74 +155,32 @@ async function callDeepSeek(prompt, history, systemPrompt) {
 // well-suited prompts. Model names below are current as of early 2026 and
 // may need updating if the provider renames/retires them.
 
-async function callGrok(prompt, history, systemPrompt) {
-  const start = Date.now();
-  try {
-    const messages = [{ role: "system", content: systemPrompt }];
-    for (const h of history) {
-      messages.push({ role: "user", content: h.prompt });
-      if (h.answer) messages.push({ role: "assistant", content: h.answer });
-    }
-    messages.push({ role: "user", content: prompt });
-
-    const res = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "grok-2-latest",
-        messages,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || "Grok request failed");
-    const text = data?.choices?.[0]?.message?.content || "";
-    return { model: "grok", text, latencyMs: Date.now() - start, status: "ok" };
-  } catch (err) {
-    return {
-      model: "grok",
-      text: err.message || "Grok failed to respond",
-      latencyMs: Date.now() - start,
-      status: "error",
-    };
-  }
+function callGrok(prompt, history, systemPrompt) {
+  return callOpenAICompatible(
+    {
+      modelLabel: "grok",
+      url: "https://api.x.ai/v1/chat/completions",
+      model: "grok-2-latest",
+      apiKey: process.env.GROK_API_KEY,
+    },
+    prompt,
+    history,
+    systemPrompt
+  );
 }
 
-async function callOpenAI(prompt, history, systemPrompt) {
-  const start = Date.now();
-  try {
-    const messages = [{ role: "system", content: systemPrompt }];
-    for (const h of history) {
-      messages.push({ role: "user", content: h.prompt });
-      if (h.answer) messages.push({ role: "assistant", content: h.answer });
-    }
-    messages.push({ role: "user", content: prompt });
-
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || "ChatGPT request failed");
-    const text = data?.choices?.[0]?.message?.content || "";
-    return { model: "openai", text, latencyMs: Date.now() - start, status: "ok" };
-  } catch (err) {
-    return {
-      model: "openai",
-      text: err.message || "ChatGPT failed to respond",
-      latencyMs: Date.now() - start,
-      status: "error",
-    };
-  }
+function callOpenAI(prompt, history, systemPrompt) {
+  return callOpenAICompatible(
+    {
+      modelLabel: "openai",
+      url: "https://api.openai.com/v1/chat/completions",
+      model: "gpt-4o-mini",
+      apiKey: process.env.OPENAI_API_KEY,
+    },
+    prompt,
+    history,
+    systemPrompt
+  );
 }
 
 async function callClaude(prompt, history, systemPrompt) {
@@ -389,11 +328,14 @@ export async function POST(req) {
           status: "error",
         };
 
-  // Only charge credits for a successful response
+  // Only charge credits for a successful response. Uses an atomic
+  // findOneAndUpdate (check + deduct in one DB op) so two concurrent
+  // requests can't both succeed when only one has enough credits left.
   if (best.status === "ok") {
-    user.credits = Math.max(0, user.credits - chosenProvider.creditCost);
-    await user.save();
-    await sendLowCreditEmailIfNeeded(user);
+    const updatedUser = await chargeCreditsAtomic(session.user.id, chosenProvider.creditCost);
+    if (updatedUser) {
+      user.credits = updatedUser.credits;
+    }
   }
 
   const turn = {
