@@ -39,5 +39,13 @@ const ConversationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Powers full-text search across a conversation's title and its message
+// content (both the user's prompts and every model's responses).
+ConversationSchema.index({
+  title: "text",
+  "turns.prompt": "text",
+  "turns.responses.text": "text",
+});
+
 export default mongoose.models.Conversation ||
   mongoose.model("Conversation", ConversationSchema);

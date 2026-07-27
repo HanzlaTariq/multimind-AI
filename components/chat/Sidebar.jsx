@@ -1,6 +1,20 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Plus, LogOut, Menu, X, Trash2, FileDown, Settings as SettingsIcon, Gift } from "lucide-react";
+import {
+  Plus,
+  LogOut,
+  Menu,
+  X,
+  Trash2,
+  FileDown,
+  Settings as SettingsIcon,
+  Gift,
+  Search,
+} from "lucide-react";
+import SearchModal from "./SearchModal";
 
 export default function Sidebar({
   open,
@@ -14,6 +28,19 @@ export default function Sidebar({
   initials,
   settings,
 }) {
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function handleKeydown(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    document.addEventListener("keydown", handleKeydown);
+    return () => document.removeEventListener("keydown", handleKeydown);
+  }, []);
+
   return (
     <>
       <aside
@@ -46,6 +73,19 @@ export default function Sidebar({
               <Plus className="h-3.5 w-3.5" />
             </span>
             New chat
+          </button>
+
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <Search className="h-3.5 w-3.5" />
+            </span>
+            <span className="flex-1 text-left">Search chats</span>
+            <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-mist/60">
+              ⌘K
+            </span>
           </button>
 
           <Link
@@ -147,6 +187,12 @@ export default function Sidebar({
           aria-label="Close sidebar overlay"
         />
       )}
+
+      <SearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onOpenConversation={onOpenConversation}
+      />
     </>
   );
 }
