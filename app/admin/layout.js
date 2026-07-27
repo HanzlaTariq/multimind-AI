@@ -18,9 +18,9 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-ink text-paper">
+    <div className="min-h-screen bg-ink text-paper">
       <AdminSidebar user={session.user} />
-      <main className="flex-1 px-4 py-6 sm:px-8 sm:py-8 lg:pl-72">{children}</main>
+      <main className="px-4 py-6 sm:px-8 sm:py-8 lg:pl-72">{children}</main>
     </div>
   );
 }
