@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { Plus, LogOut, Menu, X, Trash2, FileDown, Settings as SettingsIcon } from "lucide-react";
+import { Plus, LogOut, Menu, X, Trash2, FileDown, Settings as SettingsIcon, Gift } from "lucide-react";
 
 export default function Sidebar({
   open,
@@ -56,6 +56,16 @@ export default function Sidebar({
               <FileDown className="h-3.5 w-3.5" />
             </span>
             Document Tools
+          </Link>
+
+          <Link
+            href="/dashboard/referrals"
+            className="mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <Gift className="h-3.5 w-3.5" />
+            </span>
+            Refer & Earn
           </Link>
 
           <div className="mb-1 mt-2 px-2.5 text-xs font-medium text-mist/60">Recents</div>

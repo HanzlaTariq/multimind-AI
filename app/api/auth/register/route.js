@@ -4,10 +4,11 @@ import dbConnect from "@/lib/mongodb";
 import { sendSignupOtpEmail } from "@/lib/email";
 import PendingSignup from "@/models/PendingSignup";
 import User from "@/models/User";
+import { applyReferralBonus, REFERRAL_BONUS_CREDITS } from "@/lib/referral";
 
 export async function POST(req) {
   try {
-    const { name, email, password, otp } = await req.json();
+    const { name, email, password, otp, ref } = await req.json();
     const normalizedEmail = email?.toLowerCase().trim();
 
     if (!name || !normalizedEmail || !password) {
@@ -58,6 +59,15 @@ export async function POST(req) {
         provider: "credentials",
       });
 
+      if (pendingSignup.referredByCode) {
+        const referrerId = await applyReferralBonus(pendingSignup.referredByCode);
+        if (referrerId) {
+          user.referredBy = referrerId;
+          user.credits = (user.credits || 0) + REFERRAL_BONUS_CREDITS;
+          await user.save();
+        }
+      }
+
       await PendingSignup.deleteOne({ _id: pendingSignup._id });
 
       return Response.json(
@@ -81,6 +91,7 @@ export async function POST(req) {
         email: normalizedEmail,
         password: hashedPassword,
         otpHash,
+        referredByCode: (ref || "").trim().toUpperCase(),
         expiresAt,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }

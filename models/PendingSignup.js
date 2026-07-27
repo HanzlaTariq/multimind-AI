@@ -12,6 +12,7 @@ const PendingSignupSchema = new mongoose.Schema(
     },
     password: { type: String, required: true },
     otpHash: { type: String, required: true, select: false },
+    referredByCode: { type: String, default: "" },
     expiresAt: { type: Date, required: true, index: { expires: 0 } },
   },
   { timestamps: true }

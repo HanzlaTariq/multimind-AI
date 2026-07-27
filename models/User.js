@@ -78,6 +78,12 @@ const UserSchema = new mongoose.Schema(
     stripeCustomerId: { type: String, default: "" },
     stripeSubscriptionId: { type: String, default: "" },
 
+    // Referrals
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    referralCount: { type: Number, default: 0 },
+    referralCreditsEarned: { type: Number, default: 0 },
+
     // Text-to-speech: cloned voice IDs (ElevenLabs account is shared across
     // all users, so we track ownership here to scope each user's own voices)
     customVoices: [
