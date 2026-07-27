@@ -25,6 +25,18 @@ export default function ChatInput({
   const [listening, setListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
 
+  // Auto-grow the textarea with its content instead of staying pinned to a
+  // single row — without this, text beyond one line just gets clipped
+  // inside the fixed-height box (very visible on mobile, where the input
+  // pill has little room to begin with). Capped at 160px (~max-h-40) to
+  // match the scrollbar-thin/max-h-40 classes already on the element.
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [prompt]);
+
   // Feature-detect the browser's built-in speech recognition (Web Speech
   // API). Checked after mount so server and first client render match
   // (no window on the server) — the mic button simply doesn't appear on
