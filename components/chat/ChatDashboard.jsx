@@ -9,6 +9,7 @@ import ChatMessages from "./ChatMessages";
 import OutlinePanel from "./OutlinePanel";
 import DeleteModal from "./DeleteModal";
 import TemporaryBanner from "./TemporaryBanner";
+import Suggestions from "./Suggestions";
 import ShareModal from "@/components/ShareModal";
 import { exportConversationToPdf } from "@/lib/pdfExport";
 import { Sparkles } from "lucide-react";
@@ -304,9 +305,11 @@ export default function ChatDashboard({ user }) {
               setImageMode={setImageMode}
               temporaryMode={temporaryMode}
               error={error}
+              setError={setError}
               onSend={handleSend}
               isEmpty={isEmpty}
             />
+            <Suggestions onSelect={(text) => setPrompt(text)} />
           </div>
         ) : (
           <>
@@ -334,6 +337,7 @@ export default function ChatDashboard({ user }) {
               setImageMode={setImageMode}
               temporaryMode={temporaryMode}
               error={error}
+              setError={setError}
               onSend={handleSend}
               isEmpty={isEmpty}
             />

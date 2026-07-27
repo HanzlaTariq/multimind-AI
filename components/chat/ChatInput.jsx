@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Send, Paperclip, Image as ImageIcon, X, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Send, Paperclip, Image as ImageIcon, X, FileText, Mic, MicOff } from "lucide-react";
 
 const MAX_ATTACHMENT_BYTES = 150 * 1024;
 const ATTACHMENT_ACCEPT =
@@ -15,11 +15,84 @@ export default function ChatInput({
   setImageMode,
   temporaryMode,
   error,
+  setError,
   onSend,
   isEmpty,
 }) {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const [listening, setListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+
+  // Feature-detect the browser's built-in speech recognition (Web Speech
+  // API). Checked after mount so server and first client render match
+  // (no window on the server) — the mic button simply doesn't appear on
+  // browsers that don't support it (e.g. Firefox), rather than showing a
+  // disabled button that would confuse users.
+  useEffect(() => {
+    setSpeechSupported(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+    return () => recognitionRef.current?.stop();
+  }, []);
+
+  const toggleListening = () => {
+    if (!speechSupported) return;
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    // The Web Speech API only runs in a "secure context" — https://, or
+    // http://localhost during local dev. Over plain http on any other
+    // host (e.g. testing via a LAN IP) it silently refuses to start, so
+    // check this upfront and tell the user why instead of nothing happening.
+    if (!window.isSecureContext) {
+      setError?.(
+        "Voice input needs a secure connection (https://, or http://localhost during development) — it won't work over a plain http:// address."
+      );
+      return;
+    }
+
+    setError?.("");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      // Some browsers still fire onresult multiple times with a growing
+      // partial transcript even when interimResults is false. Only the
+      // LAST result entry's `isFinal` flag can be trusted, so ignore
+      // every firing except the genuinely final one — otherwise each
+      // partial firing gets appended on top of the last, duplicating
+      // words (e.g. "Hello Hello how Hello how are Hello how are you").
+      const lastResult = event.results[event.results.length - 1];
+      if (!lastResult?.isFinal) return;
+
+      const transcript = lastResult[0]?.transcript?.trim();
+      if (transcript) {
+        setPrompt((prev) => (prev.trim() ? `${prev.trim()} ${transcript}` : transcript));
+      }
+    };
+    recognition.onerror = (event) => {
+      setListening(false);
+      const messages = {
+        "not-allowed": "Microphone access was denied — allow microphone permission for this site in your browser settings and try again.",
+        "service-not-allowed": "Microphone access was denied — allow microphone permission for this site in your browser settings and try again.",
+        "no-speech": "Didn't catch that — try speaking again, closer to the mic.",
+        "audio-capture": "No microphone was found — check that one is connected and not in use by another app.",
+        network: "Voice input needs an internet connection to work.",
+      };
+      setError?.(messages[event.error] || "Voice input failed — please try again.");
+    };
+    recognition.onend = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -115,6 +188,22 @@ export default function ChatInput({
         >
           <ImageIcon className="h-4 w-4" />
         </button>
+
+        {speechSupported && (
+          <button
+            type="button"
+            onClick={toggleListening}
+            className={`mb-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition ${
+              listening
+                ? "animate-pulse bg-red-500/15 text-red-400"
+                : "text-mist hover:bg-surface2 hover:text-paper"
+            }`}
+            title={listening ? "Stop recording" : "Speak your message"}
+            aria-label={listening ? "Stop voice input" : "Start voice input"}
+          >
+            {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+        )}
 
         <textarea
           ref={textareaRef}
