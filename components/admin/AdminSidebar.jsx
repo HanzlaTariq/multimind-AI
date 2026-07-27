@@ -12,6 +12,7 @@ import {
   Clock,
   History,
 } from "lucide-react";
+import { useSettings } from "@/lib/SettingsContext";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -21,6 +22,32 @@ const NAV = [
   { href: "/admin/pending-signups", label: "Pending signups", icon: Clock },
   { href: "/admin/activity", label: "Activity log", icon: History },
 ];
+
+const THEMES = [
+  { value: "midnight", label: "Midnight", swatch: "#0B0E14" },
+  { value: "light", label: "Light", swatch: "#F8FAFC" },
+  { value: "nord", label: "Nord", swatch: "#0B1220" },
+  { value: "sepia", label: "Sepia", swatch: "#F5EDE0" },
+];
+
+function ThemeSwitcher() {
+  const { settings, updateSettings } = useSettings();
+  return (
+    <div className="flex items-center gap-1.5">
+      {THEMES.map((t) => (
+        <button
+          key={t.value}
+          onClick={() => updateSettings({ theme: t.value })}
+          title={t.label}
+          className={`h-5 w-5 rounded-full border-2 transition ${
+            settings.theme === t.value ? "border-signal" : "border-line/60 hover:border-mist"
+          }`}
+          style={{ backgroundColor: t.swatch }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function AdminSidebar({ user }) {
   const pathname = usePathname();
@@ -33,13 +60,16 @@ export default function AdminSidebar({ user }) {
           <ShieldCheck className="h-5 w-5 text-signal" />
           <span className="font-display text-sm font-semibold">Admin</span>
         </div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1 text-xs text-mist transition hover:text-paper"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Dashboard
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeSwitcher />
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1 text-xs text-mist transition hover:text-paper"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Dashboard
+          </Link>
+        </div>
       </div>
 
       {/* Mobile nav row */}
@@ -102,6 +132,10 @@ export default function AdminSidebar({ user }) {
         </nav>
 
         <div className="border-t border-line px-4 py-4">
+          <div className="mb-3 flex items-center justify-between rounded-lg bg-surface px-3 py-2">
+            <span className="text-xs text-mist">Theme</span>
+            <ThemeSwitcher />
+          </div>
           <div className="mb-3 flex items-center gap-2.5 rounded-lg bg-surface px-3 py-2">
             {user?.image ? (
               <img src={user.image} alt="" className="h-7 w-7 rounded-full object-cover" />

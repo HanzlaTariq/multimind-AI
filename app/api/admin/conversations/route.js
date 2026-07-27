@@ -20,6 +20,17 @@ export async function GET(req) {
   if (q) {
     filter.title = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
   }
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  if (from || to) {
+    filter.createdAt = {};
+    if (from) filter.createdAt.$gte = new Date(from);
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
 
   const [items, total] = await Promise.all([
     Conversation.find(filter)

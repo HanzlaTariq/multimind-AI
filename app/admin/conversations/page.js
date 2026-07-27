@@ -85,6 +85,8 @@ export default function AdminConversationsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [viewingId, setViewingId] = useState(null);
@@ -95,6 +97,8 @@ export default function AdminConversationsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: "20" });
       if (q) params.set("q", q);
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
       const res = await fetch(`/api/admin/conversations?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load conversations");
@@ -106,7 +110,7 @@ export default function AdminConversationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, q]);
+  }, [page, q, from, to]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -135,17 +139,55 @@ export default function AdminConversationsPage() {
         <p className="mt-1 text-sm text-mist">{total} total conversations</p>
       </div>
 
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist" />
-        <input
-          value={q}
-          onChange={(e) => {
-            setPage(1);
-            setQ(e.target.value);
-          }}
-          placeholder="Search by title…"
-          className="w-full rounded-lg border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-paper placeholder:text-mist/60 focus:border-signal focus:outline-none sm:max-w-sm"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mist" />
+          <input
+            value={q}
+            onChange={(e) => {
+              setPage(1);
+              setQ(e.target.value);
+            }}
+            placeholder="Search by title…"
+            className="w-full rounded-lg border border-line bg-surface py-2.5 pl-9 pr-3 text-sm text-paper placeholder:text-mist/60 focus:border-signal focus:outline-none"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-mist">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setPage(1);
+              setFrom(e.target.value);
+            }}
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+          />
+        </label>
+        <label className="flex items-center gap-2 text-xs text-mist">
+          To
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setPage(1);
+              setTo(e.target.value);
+            }}
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+          />
+        </label>
+        {(from || to) && (
+          <button
+            onClick={() => {
+              setPage(1);
+              setFrom("");
+              setTo("");
+            }}
+            className="text-xs text-mist underline underline-offset-2 hover:text-paper"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

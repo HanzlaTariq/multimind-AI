@@ -35,12 +35,17 @@ export default function AdminActivityPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/admin/activity?page=${page}&limit=30`);
+      const params = new URLSearchParams({ page: String(page), limit: "30" });
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await fetch(`/api/admin/activity?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load");
       setItems(data.items);
@@ -51,7 +56,7 @@ export default function AdminActivityPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, from, to]);
 
   useEffect(() => {
     load();
@@ -64,6 +69,45 @@ export default function AdminActivityPage() {
           Activity log
         </h1>
         <p className="mt-1 text-sm text-mist">{total} recorded admin actions</p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-xs text-mist">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => {
+              setPage(1);
+              setFrom(e.target.value);
+            }}
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+          />
+        </label>
+        <label className="flex items-center gap-2 text-xs text-mist">
+          To
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => {
+              setPage(1);
+              setTo(e.target.value);
+            }}
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-paper focus:border-signal focus:outline-none"
+          />
+        </label>
+        {(from || to) && (
+          <button
+            onClick={() => {
+              setPage(1);
+              setFrom("");
+              setTo("");
+            }}
+            className="text-xs text-mist underline underline-offset-2 hover:text-paper"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}

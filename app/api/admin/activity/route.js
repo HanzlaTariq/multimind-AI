@@ -11,14 +11,28 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "30", 10)));
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const filter = {};
+  if (from || to) {
+    filter.createdAt = {};
+    if (from) filter.createdAt.$gte = new Date(from);
+    if (to) {
+      // Treat `to` as inclusive of the whole day.
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
 
   const [items, total] = await Promise.all([
-    AuditLog.find({})
+    AuditLog.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
       .lean(),
-    AuditLog.countDocuments({}),
+    AuditLog.countDocuments(filter),
   ]);
 
   return Response.json({
