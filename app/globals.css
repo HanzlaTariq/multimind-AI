@@ -76,6 +76,14 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+/* The chat input's pill container already shows its own focus border
+   (focus-within:border-mist/50), so the textarea itself doesn't need its
+   own outline on top of that — it read as a stray line cutting across
+   the input, especially on mobile and on the sepia theme's orange accent. */
+textarea.chat-input-textarea:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
