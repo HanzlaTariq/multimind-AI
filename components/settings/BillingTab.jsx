@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Loader2, Zap, Smartphone, CreditCard } from "lucide-react";
+import { Check, Loader2, Zap, Smartphone, CreditCard, Receipt, ExternalLink } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
 const PLAN_TIERS = [
@@ -74,6 +74,20 @@ export default function BillingTab() {
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [error, setError] = useState("");
   const [region, setRegion] = useState("international");
+  const [history, setHistory] = useState(null);
+  const [nextDueDate, setNextDueDate] = useState(null);
+  const [nextDueSource, setNextDueSource] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/billing/history")
+      .then((res) => res.json())
+      .then((data) => {
+        setHistory(data.history || []);
+        setNextDueDate(data.nextDueDate || null);
+        setNextDueSource(data.nextDueSource || null);
+      })
+      .catch(() => setHistory([]));
+  }, []);
 
   const currentPlan = settings.plan || "free";
   const currentTierCredits = PLAN_TIERS.find((p) => p.id === currentPlan)?.credits || 60;
@@ -263,6 +277,20 @@ export default function BillingTab() {
           </p>
         )}
 
+        {settings.planExpiresAt && (
+          <p className="mt-2 text-xs text-amber-400">
+            This plan was paid via JazzCash/Razorpay and expires on{" "}
+            <span className="font-medium">
+              {new Date(settings.planExpiresAt).toLocaleDateString(undefined, {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>{" "}
+            — pay again before then to keep it, or it drops back to Free automatically.
+          </p>
+        )}
+
         {currentPlan !== "free" && (
           <button
             onClick={handleManageBilling}
@@ -357,6 +385,99 @@ export default function BillingTab() {
       )}
 
       {error && <p className="text-xs text-red-400">{error}</p>}
+
+      {/* Next payment due */}
+      {nextDueDate && (
+        <div className="rounded-2xl border border-line bg-surface p-5">
+          <p className="flex items-center gap-1.5 text-sm text-paper">
+            <Zap className="h-3.5 w-3.5 text-signal" />
+            Next payment due
+          </p>
+          <p className="mt-1 font-display text-xl font-semibold text-paper">
+            {new Date(nextDueDate).toLocaleDateString(undefined, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+          <p className="mt-1 text-xs text-mist">
+            {nextDueSource === "stripe"
+              ? "Charged automatically to your card on file — no action needed."
+              : "This plan doesn't auto-renew — pay again before this date to keep it active."}
+          </p>
+        </div>
+      )}
+
+      {/* Payment history */}
+      <div className="rounded-2xl border border-line bg-surface p-5">
+        <p className="mb-3 flex items-center gap-1.5 text-sm text-paper">
+          <Receipt className="h-3.5 w-3.5 text-signal" />
+          Payment history
+        </p>
+
+        {history === null && (
+          <div className="flex items-center gap-2 py-3 text-sm text-mist">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Loading…
+          </div>
+        )}
+
+        {history?.length === 0 && (
+          <p className="py-2 text-xs text-mist/60">No payments yet — your paid invoices will show up here.</p>
+        )}
+
+        {history?.length > 0 && (
+          <div className="space-y-1.5">
+            {history.map((h, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 rounded-lg border border-line/60 bg-surface2 px-3 py-2.5 text-xs"
+              >
+                <div className="min-w-0">
+                  <p className="text-paper">
+                    {new Date(h.date).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                    <span className="ml-1.5 text-mist/60">
+                      · {h.plan?.charAt(0).toUpperCase() + h.plan?.slice(1)}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 truncate font-mono text-[10px] text-mist/50">
+                    {h.gateway === "jazzcash" ? "JazzCash" : h.gateway === "razorpay" ? "Razorpay" : "Stripe"}
+                    {" · "}
+                    Ref: {h.reference}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-medium text-paper">
+                    {h.currency === "PKR" ? "Rs. " : h.currency === "INR" ? "₹" : "$"}
+                    {h.amount.toLocaleString()}
+                  </span>
+                  {h.receiptUrl && (
+                    <a
+                      href={h.receiptUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-mist transition hover:text-signal"
+                      title="View receipt"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className="mt-3 text-[10px] text-mist/50">
+          For your security, we only keep a payment reference number here — never full card or bank
+          account numbers. Stripe payments link to an official receipt.
+        </p>
+      </div>
     </div>
   );
 }

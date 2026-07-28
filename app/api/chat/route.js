@@ -5,7 +5,7 @@ import Conversation from "@/models/Conversation";
 import Project from "@/models/Project";
 import User from "@/models/User";
 import { routeToProvider } from "@/lib/providers";
-import { creditsForPlan, chargeCreditsAtomic } from "@/lib/plans";
+import { chargeCreditsAtomic, resetCreditsIfNeeded } from "@/lib/plans";
 
 const BASE_SYSTEM_PROMPT = `You are a helpful, accurate assistant used inside a comparison tool, so quality and correctness matter a lot.
 
@@ -273,8 +273,6 @@ function buildEffectivePrompt(prompt, attachment) {
   }`;
 }
 
-const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
-
 export async function POST(req) {
   const session = await getServerSession(authOptions);
 
@@ -296,13 +294,10 @@ export async function POST(req) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Reset credits if a new monthly period has started
+  // Reset credits if a new monthly period has started — or drop back to
+  // free if a locally-purchased (JazzCash/Razorpay) plan has expired.
   const now = new Date();
-  const lastReset = user.creditsResetAt ? new Date(user.creditsResetAt) : null;
-  if (!lastReset || now - lastReset > MS_PER_MONTH) {
-    user.credits = creditsForPlan(user.plan);
-    user.creditsResetAt = now;
-    user.lowCreditEmailSentAt = null;
+  if (resetCreditsIfNeeded(user, now)) {
     await user.save();
   }
 

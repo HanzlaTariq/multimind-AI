@@ -2,9 +2,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { resetCreditsIfNeeded } from "@/lib/plans";
 
 const SELECT_FIELDS =
-  "name email image preferredName role customInstructions chatFont theme reduceMotion notifyOnComplete plan credits creditsResetAt";
+  "name email image preferredName role customInstructions chatFont theme reduceMotion notifyOnComplete plan credits creditsResetAt planExpiresAt";
 
 const ALLOWED_UPDATE_FIELDS = [
   "name",
@@ -27,6 +28,13 @@ export async function GET() {
   const user = await User.findById(session.user.id).select(SELECT_FIELDS);
   if (!user) {
     return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // Catches the case where a JazzCash/Razorpay plan expired since the
+  // user's last chat message — keeps the settings page honest even if
+  // they haven't sent anything since it lapsed.
+  if (resetCreditsIfNeeded(user)) {
+    await user.save();
   }
 
   return Response.json({ user });

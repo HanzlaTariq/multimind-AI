@@ -39,6 +39,9 @@ const UserSchema = new mongoose.Schema(
     },
     credits: { type: Number, default: 60 },
     creditsResetAt: { type: Date, default: Date.now },
+    // Only set for JazzCash/Razorpay purchases, which don't auto-renew like
+    // Stripe subscriptions do. Null for free users and Stripe subscribers.
+    planExpiresAt: { type: Date, default: null },
     lowCreditEmailSentAt: { type: Date, default: null },
 
     // Admin panel
