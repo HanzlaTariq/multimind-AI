@@ -51,7 +51,7 @@ function buildSystemPrompt(profile) {
   return `${BASE_SYSTEM_PROMPT}\n\nPersonalization for this user:\n${lines.join("\n")}`;
 }
 
-function buildProjectSystemPrompt(basePrompt, project) {
+function buildProjectSystemPrompt(basePrompt, project, progressSummary) {
   if (!project) return basePrompt;
 
   const sections = [];
@@ -66,10 +66,17 @@ function buildProjectSystemPrompt(basePrompt, project) {
       .join("\n\n");
     sections.push(`Project reference files (use as context/knowledge for this project):\n\n${fileBlocks}`);
   }
+  if (progressSummary) {
+    sections.push(
+      `Progress so far in OTHER chats within this same project (this is a different chat than the one below — don't repeat what's already been covered there; continue progressively from where it left off, unless the user explicitly asks to revisit something):\n\n${progressSummary}`
+    );
+  }
 
-  if (sections.length === 0) return basePrompt;
+  const header = `You are working inside a project called "${project.name}". If the user asks what this project/chat is called, tell them it's "${project.name}".`;
 
-  return `${basePrompt}\n\nYou are working inside a project called "${project.name}". Everything below is scoped to this project only.\n\n${sections.join("\n\n")}`;
+  if (sections.length === 0) return `${basePrompt}\n\n${header}`;
+
+  return `${basePrompt}\n\n${header} Everything below is scoped to this project only.\n\n${sections.join("\n\n")}`;
 }
 
 // history: array of { prompt, answer } from earlier turns in this conversation
@@ -309,7 +316,35 @@ export async function POST(req) {
       return Response.json({ error: "Project not found" }, { status: 404 });
     }
   }
-  const finalSystemPrompt = buildProjectSystemPrompt(systemPrompt, project);
+
+  let projectProgress = "";
+  if (project) {
+    const siblingConvos = await Conversation.find({
+      project: projectId,
+      user: session.user.id,
+      ...(conversationId ? { _id: { $ne: conversationId } } : {}),
+    })
+      .select("title turns.prompt turns.best.text createdAt")
+      .sort({ createdAt: 1 })
+      .limit(15);
+
+    if (siblingConvos.length > 0) {
+      projectProgress = siblingConvos
+        .map((c, idx) => {
+          const turnsSummary = (c.turns || [])
+            .slice(0, 6)
+            .map((t) => {
+              const answer = (t.best?.text || "").slice(0, 220).trim();
+              return `  - Asked: "${(t.prompt || "").slice(0, 150)}" → Covered: ${answer}`;
+            })
+            .join("\n");
+          return `Chat ${idx + 1} ("${c.title}"):\n${turnsSummary}`;
+        })
+        .join("\n\n")
+        .slice(0, 6000);
+    }
+  }
+  const finalSystemPrompt = buildProjectSystemPrompt(systemPrompt, project, projectProgress);
 
   // Smart routing: pick ONE best-fit model for this prompt (among providers
   // whose API key is configured), affordable within the user's remaining

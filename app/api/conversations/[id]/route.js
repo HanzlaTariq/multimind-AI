@@ -69,6 +69,17 @@ export async function PATCH(req, { params }) {
     conversation.title = body.title.trim().slice(0, 80);
   }
 
+  if ("projectId" in body) {
+    if (body.projectId) {
+      const Project = (await import("@/models/Project")).default;
+      const targetProject = await Project.findOne({ _id: body.projectId, user: session.user.id });
+      if (!targetProject) {
+        return Response.json({ error: "Project not found" }, { status: 404 });
+      }
+    }
+    conversation.project = body.projectId || null;
+  }
+
   if (typeof body.isPublic === "boolean") {
     conversation.isPublic = body.isPublic;
     if (body.isPublic && !conversation.shareId) {

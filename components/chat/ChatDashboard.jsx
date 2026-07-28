@@ -14,6 +14,7 @@ import TemporaryBanner from "./TemporaryBanner";
 import Suggestions from "./Suggestions";
 import ShareModal from "@/components/ShareModal";
 import ProjectSettingsModal from "./ProjectSettingsModal";
+import MoveToProjectModal from "./MoveToProjectModal";
 import { exportConversationToPdf } from "@/lib/pdfExport";
 import { Sparkles, FolderKanban, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 
@@ -25,6 +26,7 @@ export default function ChatDashboard({ user, project = null }) {
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   const [deleteProjectConfirmOpen, setDeleteProjectConfirmOpen] = useState(false);
   const [deletingProject, setDeletingProject] = useState(false);
+  const [moveTargetConversationId, setMoveTargetConversationId] = useState(null);
 
   // State
   const [conversations, setConversations] = useState([]);
@@ -378,6 +380,25 @@ export default function ChatDashboard({ user, project = null }) {
     }
   }
 
+  // Moves an existing chat into a project — that chat then only shows up
+  // inside that project's workspace, not in the main Recents list.
+  async function moveConversationToProject(id, targetProjectId) {
+    try {
+      const res = await fetch(`/api/conversations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: targetProjectId }),
+      });
+      if (!res.ok) return false;
+      setConversations((prev) => prev.filter((c) => c._id !== id));
+      if (id === conversationId) startNewChat();
+      setMoveTargetConversationId(null);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function scrollToTurn(index) {
     setOutlineOpen(false);
     turnRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -407,6 +428,7 @@ export default function ChatDashboard({ user, project = null }) {
         }}
         onRenameConversation={renameConversation}
         onToggleConversationPin={toggleConversationPin}
+        onMoveToProject={(id) => setMoveTargetConversationId(id)}
         user={user}
         initials={initials}
         settings={settings}
@@ -567,6 +589,15 @@ export default function ChatDashboard({ user, project = null }) {
           onConfirm={handleDeleteProject}
           title={`Delete "${projectData.name}"?`}
           message="This deletes the project, its instructions, and its files. Chats inside it move back to your main Recents list instead of being deleted."
+        />
+      )}
+      {/* Move to Project Modal */}
+      {moveTargetConversationId && (
+        <MoveToProjectModal
+          onClose={() => setMoveTargetConversationId(null)}
+          onMove={(targetProjectId) =>
+            moveConversationToProject(moveTargetConversationId, targetProjectId)
+          }
         />
       )}
     </div>

@@ -18,10 +18,11 @@ import {
   Pencil,
   Check,
   FolderKanban,
+  FolderInput,
 } from "lucide-react";
 import SearchModal from "./SearchModal";
 
-function ConversationRow({ c, active, onOpen, onDelete, onRename, onTogglePin }) {
+function ConversationRow({ c, active, onOpen, onDelete, onRename, onTogglePin, onMoveToProject }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(c.title);
   const inputRef = useRef(null);
@@ -107,6 +108,20 @@ function ConversationRow({ c, active, onOpen, onDelete, onRename, onTogglePin })
       <span
         role="button"
         tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onMoveToProject(c._id);
+        }}
+        className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-surface2 hover:text-paper group-hover:text-mist/60"
+        aria-label="Move to project"
+        title="Move to project"
+      >
+        <FolderInput className="h-3.5 w-3.5" />
+      </span>
+
+      <span
+        role="button"
+        tabIndex={0}
         onClick={startEdit}
         className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-surface2 hover:text-paper group-hover:text-mist/60"
         aria-label="Rename conversation"
@@ -142,6 +157,7 @@ export default function Sidebar({
   onDeleteConversation,
   onRenameConversation,
   onToggleConversationPin,
+  onMoveToProject,
   user,
   initials,
   settings,
@@ -257,6 +273,7 @@ export default function Sidebar({
                       onDelete={onDeleteConversation}
                       onRename={onRenameConversation}
                       onTogglePin={onToggleConversationPin}
+                      onMoveToProject={onMoveToProject}
                     />
                   ))}
                 </div>
@@ -276,6 +293,7 @@ export default function Sidebar({
                       onDelete={onDeleteConversation}
                       onRename={onRenameConversation}
                       onTogglePin={onToggleConversationPin}
+                      onMoveToProject={onMoveToProject}
                     />
                   ))}
                 </div>
