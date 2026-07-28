@@ -3,10 +3,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Payment from "@/models/Payment";
-import { PLANS, localPriceForPlan } from "@/lib/plans";
+import { getPlans, getUpgradablePlans, localPriceForPlan } from "@/lib/plans";
 import { buildJazzCashFields, jazzCashCheckoutUrl } from "@/lib/jazzcash";
-
-const UPGRADABLE_PLANS = ["basic", "pro", "business"];
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -15,11 +13,12 @@ export async function POST(req) {
   }
 
   const { plan } = await req.json();
-  if (!UPGRADABLE_PLANS.includes(plan)) {
+  const upgradablePlans = await getUpgradablePlans();
+  if (!upgradablePlans.includes(plan)) {
     return Response.json({ error: "Please choose a valid plan" }, { status: 400 });
   }
 
-  const amountPKR = localPriceForPlan(plan, "PKR");
+  const amountPKR = await localPriceForPlan(plan, "PKR");
   if (!amountPKR) {
     return Response.json({ error: "Pricing isn't set for this plan yet" }, { status: 500 });
   }
@@ -38,7 +37,7 @@ export async function POST(req) {
       amountPKR,
       txnRef,
       billReference: `plan-${plan}`,
-      description: `MultiMind ${PLANS[plan].label} plan — 1 month`,
+      description: `MultiMind ${(await getPlans())[plan].label} plan — 1 month`,
       returnUrl: `${origin}/api/billing/jazzcash/callback`,
     });
 

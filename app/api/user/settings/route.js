@@ -33,7 +33,7 @@ export async function GET() {
   // Catches the case where a JazzCash/Razorpay plan expired since the
   // user's last chat message — keeps the settings page honest even if
   // they haven't sent anything since it lapsed.
-  if (resetCreditsIfNeeded(user)) {
+  if (await resetCreditsIfNeeded(user)) {
     await user.save();
   }
 

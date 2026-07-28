@@ -36,7 +36,7 @@ export async function POST(req) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  const creditState = getToolCreditState(user, "images-to-pdf");
+  const creditState = await getToolCreditState(user, "images-to-pdf");
   if (!creditState.canUse) {
     return Response.json(
       {

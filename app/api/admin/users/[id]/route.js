@@ -2,7 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Conversation from "@/models/Conversation";
 import { requireAdmin, logAdminAction } from "@/lib/admin";
-import { PLANS, creditsForPlan } from "@/lib/plans";
+import { getPlans, creditsForPlan } from "@/lib/plans";
 
 export async function GET(req, { params }) {
   const check = await requireAdmin();
@@ -34,14 +34,15 @@ export async function PATCH(req, { params }) {
   const update = {};
 
   if (typeof body.plan === "string") {
-    if (!(body.plan in PLANS)) {
+    const plans = await getPlans();
+    if (!(body.plan in plans)) {
       return Response.json({ error: "Invalid plan" }, { status: 400 });
     }
     update.plan = body.plan;
     // If credits weren't explicitly provided too, refresh the allowance
     // to match the new plan so the change takes effect immediately.
     if (typeof body.credits !== "number") {
-      update.credits = creditsForPlan(body.plan);
+      update.credits = await creditsForPlan(body.plan);
     }
   }
 

@@ -43,15 +43,16 @@ export async function GET() {
 
     let mrr = 0;
     const byPlan = { basic: 0, pro: 0, business: 0, other: 0 };
-    const subscriptions = activeSubs.data.map((sub) => {
+    const subscriptions = [];
+    for (const sub of activeSubs.data) {
       const price = sub.items?.data?.[0]?.price;
       const amount = monthlyAmount(price);
       mrr += amount;
-      const plan = (price?.id && planForPriceId(price.id)) || "other";
+      const plan = (price?.id && (await planForPriceId(price.id))) || "other";
       byPlan[plan] = (byPlan[plan] || 0) + 1;
 
       const customer = sub.customer;
-      return {
+      subscriptions.push({
         id: sub.id,
         customerEmail: typeof customer === "object" ? customer?.email : null,
         customerName: typeof customer === "object" ? customer?.name : null,
@@ -61,8 +62,8 @@ export async function GET() {
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null,
         status: sub.status,
-      };
-    });
+      });
+    }
 
     return Response.json({
       configured: true,

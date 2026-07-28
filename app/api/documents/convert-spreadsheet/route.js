@@ -46,7 +46,7 @@ export async function POST(req) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  const creditState = getToolCreditState(user, "convert-spreadsheet");
+  const creditState = await getToolCreditState(user, "convert-spreadsheet");
   if (!creditState.canUse) {
     return Response.json(
       {

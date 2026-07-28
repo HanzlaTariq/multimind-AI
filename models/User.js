@@ -33,8 +33,12 @@ const UserSchema = new mongoose.Schema(
       default: "credentials",
     },
     plan: {
+      // No enum here on purpose — the admin panel can create custom plans
+      // (deals/discounts) beyond the 4 built-in tiers, and User.plan needs
+      // to accept whatever key that plan was given. Validity is checked
+      // against the live PlanConfig list (lib/plans.js) wherever a plan is
+      // set, not at the schema level.
       type: String,
-      enum: ["free", "basic", "pro", "business"],
       default: "free",
     },
     credits: { type: Number, default: 60 },

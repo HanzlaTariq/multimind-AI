@@ -39,7 +39,7 @@ export async function POST(req) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  const creditState = getToolCreditState(user, "merge-pdf");
+  const creditState = await getToolCreditState(user, "merge-pdf");
   if (!creditState.canUse) {
     return Response.json(
       {

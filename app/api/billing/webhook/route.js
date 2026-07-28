@@ -37,7 +37,7 @@ export async function POST(req) {
           await User.findByIdAndUpdate(userId, {
             plan,
             stripeSubscriptionId: checkoutSession.subscription,
-            credits: creditsForPlan(plan),
+            credits: await creditsForPlan(plan),
             creditsResetAt: new Date(),
           });
         }
@@ -47,17 +47,17 @@ export async function POST(req) {
         const subscription = event.data.object;
         const isActive = ["active", "trialing"].includes(subscription.status);
         const priceId = subscription.items?.data?.[0]?.price?.id;
-        const matchedPlan = priceId ? planForPriceId(priceId) : null;
+        const matchedPlan = priceId ? await planForPriceId(priceId) : null;
 
         const user = await User.findOne({ stripeSubscriptionId: subscription.id });
         if (user) {
           if (!isActive) {
             user.plan = "free";
-            user.credits = creditsForPlan("free");
+            user.credits = await creditsForPlan("free");
           } else if (matchedPlan) {
             // Plan may have changed (upgrade/downgrade) — sync credits to the new tier
             if (user.plan !== matchedPlan) {
-              user.credits = creditsForPlan(matchedPlan);
+              user.credits = await creditsForPlan(matchedPlan);
             }
             user.plan = matchedPlan;
           }
@@ -70,7 +70,7 @@ export async function POST(req) {
         const subscription = event.data.object;
         await User.findOneAndUpdate(
           { stripeSubscriptionId: subscription.id },
-          { plan: "free", stripeSubscriptionId: "", credits: creditsForPlan("free"), creditsResetAt: new Date() }
+          { plan: "free", stripeSubscriptionId: "", credits: await creditsForPlan("free"), creditsResetAt: new Date() }
         );
         break;
       }

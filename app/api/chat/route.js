@@ -297,7 +297,7 @@ export async function POST(req) {
   // Reset credits if a new monthly period has started — or drop back to
   // free if a locally-purchased (JazzCash/Razorpay) plan has expired.
   const now = new Date();
-  if (resetCreditsIfNeeded(user, now)) {
+  if (await resetCreditsIfNeeded(user, now)) {
     await user.save();
   }
 

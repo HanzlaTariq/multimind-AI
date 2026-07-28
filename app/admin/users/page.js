@@ -14,7 +14,30 @@ import {
   Minus,
 } from "lucide-react";
 
-const PLANS = ["free", "basic", "pro", "business"];
+function usePlanOptions() {
+  const [options, setOptions] = useState([
+    { key: "free", label: "Free" },
+    { key: "basic", label: "Basic" },
+    { key: "pro", label: "Pro" },
+    { key: "business", label: "Business" },
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin/plans")
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled || !Array.isArray(data.plans)) return;
+        setOptions(data.plans.map((p) => ({ key: p.key, label: p.label })));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return options;
+}
 
 function Badge({ children, tone = "default" }) {
   const tones = {
@@ -30,6 +53,7 @@ function Badge({ children, tone = "default" }) {
 }
 
 function EditUserDrawer({ user, onClose, onSaved }) {
+  const planOptions = usePlanOptions();
   const [plan, setPlan] = useState(user.plan);
   const [credits, setCredits] = useState(user.credits);
   const [isAdmin, setIsAdmin] = useState(user.isAdmin);
@@ -178,9 +202,9 @@ function EditUserDrawer({ user, onClose, onSaved }) {
               onChange={(e) => setPlan(e.target.value)}
               className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-paper focus:border-signal focus:outline-none"
             >
-              {PLANS.map((p) => (
-                <option key={p} value={p}>
-                  {p[0].toUpperCase() + p.slice(1)}
+              {planOptions.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.label}
                 </option>
               ))}
             </select>
@@ -319,6 +343,7 @@ function EditUserDrawer({ user, onClose, onSaved }) {
 }
 
 export default function AdminUsersPage() {
+  const planOptions = usePlanOptions();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -393,9 +418,9 @@ export default function AdminUsersPage() {
           className="rounded-lg border border-line bg-surface px-3 py-2.5 text-sm text-paper focus:border-signal focus:outline-none"
         >
           <option value="">All plans</option>
-          {PLANS.map((p) => (
-            <option key={p} value={p}>
-              {p[0].toUpperCase() + p.slice(1)}
+          {planOptions.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
             </option>
           ))}
         </select>

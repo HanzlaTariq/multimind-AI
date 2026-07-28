@@ -11,6 +11,7 @@ import {
   CreditCard,
   Clock,
   History,
+  Tag,
 } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
@@ -18,6 +19,7 @@ const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/conversations", label: "Conversations", icon: MessagesSquare },
+  { href: "/admin/plans", label: "Plans & Pricing", icon: Tag },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/pending-signups", label: "Pending signups", icon: Clock },
   { href: "/admin/activity", label: "Activity log", icon: History },

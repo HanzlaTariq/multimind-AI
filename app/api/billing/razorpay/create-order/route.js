@@ -3,10 +3,8 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Payment from "@/models/Payment";
-import { localPriceForPlan } from "@/lib/plans";
+import { getUpgradablePlans, localPriceForPlan } from "@/lib/plans";
 import { createRazorpayOrder } from "@/lib/razorpay";
-
-const UPGRADABLE_PLANS = ["basic", "pro", "business"];
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -15,11 +13,12 @@ export async function POST(req) {
   }
 
   const { plan } = await req.json();
-  if (!UPGRADABLE_PLANS.includes(plan)) {
+  const upgradablePlans = await getUpgradablePlans();
+  if (!upgradablePlans.includes(plan)) {
     return Response.json({ error: "Please choose a valid plan" }, { status: 400 });
   }
 
-  const amountINR = localPriceForPlan(plan, "INR");
+  const amountINR = await localPriceForPlan(plan, "INR");
   if (!amountINR) {
     return Response.json({ error: "Pricing isn't set for this plan yet" }, { status: 500 });
   }

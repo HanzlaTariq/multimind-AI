@@ -1,45 +1,125 @@
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import Conversation from "@/models/Conversation";
 import { requireAdmin, logAdminAction } from "@/lib/admin";
+import { getPlans, creditsForPlan } from "@/lib/plans";
 
-// Adjusts a user's credit balance by a signed amount (positive = bonus,
-// negative = deduction) and records why, separately from setting an
-// absolute value via PATCH /api/admin/users/[id]. Kept atomic so it can't
-// race with the user's own credit-spending requests.
-export async function POST(req, { params }) {
+export async function GET(req, { params }) {
   const check = await requireAdmin();
   if (check instanceof Response) return check;
-  const session = check;
-
-  const body = await req.json();
-  const amount = Number(body.amount);
-  const reason = (body.reason || "").trim();
-
-  if (!Number.isFinite(amount) || amount === 0) {
-    return Response.json({ error: "Amount must be a non-zero number" }, { status: 400 });
-  }
-  if (!reason) {
-    return Response.json({ error: "A reason is required" }, { status: 400 });
-  }
 
   await dbConnect();
 
-  const user = await User.findById(params.id);
+  const user = await User.findById(params.id)
+    .select("-password")
+    .lean();
+
   if (!user) {
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
-  user.credits = Math.max(0, (user.credits || 0) + amount);
-  await user.save();
+  const conversationCount = await Conversation.countDocuments({ user: params.id });
+
+  return Response.json({ user, conversationCount });
+}
+
+export async function PATCH(req, { params }) {
+  const check = await requireAdmin();
+  if (check instanceof Response) return check;
+  const session = check;
+
+  await dbConnect();
+
+  const body = await req.json();
+  const update = {};
+
+  if (typeof body.plan === "string") {
+    const plans = await getPlans();
+    if (!(body.plan in plans)) {
+      return Response.json({ error: "Invalid plan" }, { status: 400 });
+    }
+    update.plan = body.plan;
+    // If credits weren't explicitly provided too, refresh the allowance
+    // to match the new plan so the change takes effect immediately.
+    if (typeof body.credits !== "number") {
+      update.credits = await creditsForPlan(body.plan);
+    }
+  }
+
+  if (typeof body.credits === "number") {
+    update.credits = Math.max(0, Math.floor(body.credits));
+  }
+
+  if (typeof body.isAdmin === "boolean") {
+    if (params.id === session.user.id && body.isAdmin === false) {
+      return Response.json(
+        { error: "You can't remove your own admin access" },
+        { status: 400 }
+      );
+    }
+    update.isAdmin = body.isAdmin;
+  }
+
+  if (typeof body.banned === "boolean") {
+    if (params.id === session.user.id && body.banned === true) {
+      return Response.json({ error: "You can't ban your own account" }, { status: 400 });
+    }
+    update.banned = body.banned;
+    update.bannedReason = body.banned ? body.bannedReason || "" : "";
+  }
+
+  if (Object.keys(update).length === 0) {
+    return Response.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const user = await User.findByIdAndUpdate(params.id, update, {
+    new: true,
+    runValidators: true,
+  })
+    .select("-password")
+    .lean();
+
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
 
   await logAdminAction({
     session,
-    action: "user.credit_grant",
+    action: "user.update",
     targetType: "user",
     targetId: user._id,
     targetLabel: user.email,
-    details: { amount, reason, newBalance: user.credits },
+    details: update,
   });
 
-  return Response.json({ credits: user.credits });
+  return Response.json({ user });
+}
+
+export async function DELETE(req, { params }) {
+  const check = await requireAdmin();
+  if (check instanceof Response) return check;
+  const session = check;
+
+  if (params.id === session.user.id) {
+    return Response.json({ error: "You can't delete your own account" }, { status: 400 });
+  }
+
+  await dbConnect();
+
+  const user = await User.findByIdAndDelete(params.id).lean();
+  if (!user) {
+    return Response.json({ error: "User not found" }, { status: 404 });
+  }
+
+  await Conversation.deleteMany({ user: params.id });
+
+  await logAdminAction({
+    session,
+    action: "user.delete",
+    targetType: "user",
+    targetId: params.id,
+    targetLabel: user.email,
+  });
+
+  return Response.json({ success: true });
 }

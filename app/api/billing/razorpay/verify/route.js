@@ -46,7 +46,7 @@ export async function POST(req) {
   await payment.save();
 
   const user = await User.findById(session.user.id);
-  applyLocalPlanPurchase(user, payment.plan);
+  await applyLocalPlanPurchase(user, payment.plan);
   await user.save();
 
   return Response.json({ success: true, plan: payment.plan });

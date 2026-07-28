@@ -42,7 +42,7 @@ export async function POST(req) {
 
   const user = await User.findById(payment.user);
   if (user) {
-    applyLocalPlanPurchase(user, payment.plan);
+    await applyLocalPlanPurchase(user, payment.plan);
     await user.save();
   }
 

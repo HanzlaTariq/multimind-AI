@@ -5,48 +5,19 @@ import { useSearchParams } from "next/navigation";
 import { Check, Loader2, Zap, Smartphone, CreditCard, Receipt, ExternalLink } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
-const PLAN_TIERS = [
-  {
-    id: "free",
-    label: "Free",
-    priceUSD: 0,
-    pricePKR: 0,
-    priceINR: 0,
-    period: "forever",
-    credits: 60,
-    features: ["A small monthly allowance to try things out", "Smart model routing"],
-  },
-  {
-    id: "basic",
-    label: "Basic",
-    priceUSD: 9.99,
-    pricePKR: 2799,
-    priceINR: 799,
-    period: "/ month",
-    credits: 1500,
-    features: ["1,500 credits/month", "Smart model routing", "Full conversation history"],
-  },
-  {
-    id: "pro",
-    label: "Pro",
-    priceUSD: 24.99,
-    pricePKR: 6999,
-    priceINR: 1999,
-    period: "/ month",
-    credits: 8000,
-    features: ["8,000 credits/month", "Priority routing", "Unlimited history", "PDF export"],
-  },
-  {
-    id: "business",
-    label: "Business",
-    priceUSD: 59.99,
-    pricePKR: 16999,
-    priceINR: 4999,
-    period: "/ month",
-    credits: 30000,
-    features: ["30,000 credits/month", "Highest priority", "Everything in Pro"],
-  },
-];
+// Generic feature bullets shown under each plan card. The numbers/labels
+// come from the live plan data (credits, discount, badge) — only these
+// short descriptive lines are fixed copy.
+function featuresFor(tier) {
+  if (tier.key === "free") {
+    return ["A small monthly allowance to try things out", "Smart model routing"];
+  }
+  const lines = [`${tier.monthlyCredits.toLocaleString()} credits/month`, "Smart model routing"];
+  if (tier.key === "pro") lines.push("Priority routing", "Unlimited history", "PDF export");
+  else if (tier.key === "business") lines.push("Highest priority", "Everything in Pro");
+  else lines.push("Full conversation history");
+  return lines;
+}
 
 const REGIONS = [
   { id: "international", label: "International", icon: CreditCard, note: "Card payment via Stripe" },
@@ -77,6 +48,8 @@ export default function BillingTab() {
   const [history, setHistory] = useState(null);
   const [nextDueDate, setNextDueDate] = useState(null);
   const [nextDueSource, setNextDueSource] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/billing/history")
@@ -89,8 +62,16 @@ export default function BillingTab() {
       .catch(() => setHistory([]));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/plans")
+      .then((res) => res.json())
+      .then((data) => setPlans(Array.isArray(data.plans) ? data.plans : []))
+      .catch(() => setPlans([]))
+      .finally(() => setPlansLoading(false));
+  }, []);
+
   const currentPlan = settings.plan || "free";
-  const currentTierCredits = PLAN_TIERS.find((p) => p.id === currentPlan)?.credits || 60;
+  const currentTierCredits = plans.find((p) => p.key === currentPlan)?.monthlyCredits || 60;
   const creditsUsedPercent = Math.min(
     100,
     Math.max(0, Math.round((1 - (settings.credits ?? 0) / currentTierCredits) * 100))
@@ -228,9 +209,26 @@ export default function BillingTab() {
   }
 
   function priceLabel(tier) {
-    if (region === "pakistan") return { amount: `Rs. ${tier.pricePKR.toLocaleString()}`, period: tier.period };
-    if (region === "india") return { amount: `₹${tier.priceINR.toLocaleString()}`, period: tier.period };
-    return { amount: `$${tier.priceUSD}`, period: tier.period };
+    const period = tier.key === "free" ? "forever" : "/ month";
+    if (region === "pakistan") {
+      return {
+        amount: `Rs. ${tier.pricePKR.toLocaleString()}`,
+        listAmount: tier.discountPercent ? `Rs. ${tier.listPricePKR.toLocaleString()}` : null,
+        period,
+      };
+    }
+    if (region === "india") {
+      return {
+        amount: `₹${tier.priceINR.toLocaleString()}`,
+        listAmount: tier.discountPercent ? `₹${tier.listPriceINR.toLocaleString()}` : null,
+        period,
+      };
+    }
+    return {
+      amount: `$${tier.priceUSD}`,
+      listAmount: tier.discountPercent ? `$${tier.listPriceUSD}` : null,
+      period,
+    };
   }
 
   return (
@@ -329,53 +327,71 @@ export default function BillingTab() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {PLAN_TIERS.map((tier) => {
-          const isCurrent = currentPlan === tier.id;
-          const price = priceLabel(tier);
-          return (
-            <div
-              key={tier.id}
-              className={`rounded-2xl border p-5 ${
-                isCurrent ? "border-signal bg-surface shadow-lg shadow-signal/10" : "border-line bg-surface"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-semibold text-paper">{tier.label}</p>
-                {isCurrent && (
-                  <span className="rounded-full bg-signal/15 px-2.5 py-0.5 text-[10px] font-medium text-signal">
-                    Current
+      {plansLoading ? (
+        <div className="flex items-center gap-2 py-6 text-sm text-mist">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading plans…
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {plans.map((tier) => {
+            const isCurrent = currentPlan === tier.key;
+            const price = priceLabel(tier);
+            return (
+              <div
+                key={tier.key}
+                className={`relative rounded-2xl border p-5 ${
+                  isCurrent ? "border-signal bg-surface shadow-lg shadow-signal/10" : "border-line bg-surface"
+                }`}
+              >
+                {tier.badge && (
+                  <span className="absolute -top-2.5 right-4 rounded-full bg-signal px-2 py-0.5 text-[10px] font-semibold text-ink">
+                    {tier.badge}
                   </span>
                 )}
-              </div>
-              <div className="mt-1.5 flex items-baseline gap-1">
-                <span className="font-display text-2xl font-semibold text-paper">{price.amount}</span>
-                <span className="text-xs text-mist">{price.period}</span>
-              </div>
+                <div className="flex items-center justify-between">
+                  <p className="font-display text-lg font-semibold text-paper">{tier.label}</p>
+                  {isCurrent && (
+                    <span className="rounded-full bg-signal/15 px-2.5 py-0.5 text-[10px] font-medium text-signal">
+                      Current
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-baseline gap-1.5">
+                  <span className="font-display text-2xl font-semibold text-paper">{price.amount}</span>
+                  <span className="text-xs text-mist">{price.period}</span>
+                  {price.listAmount && (
+                    <span className="text-xs text-mist/60 line-through">{price.listAmount}</span>
+                  )}
+                </div>
+                {tier.discountPercent > 0 && (
+                  <p className="mt-0.5 text-[11px] font-medium text-signal">{tier.discountPercent}% off</p>
+                )}
 
-              <ul className="mt-4 space-y-1.5">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-mist">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+                <ul className="mt-4 space-y-1.5">
+                  {featuresFor(tier).map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-xs text-mist">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
 
-              {tier.id !== "free" && !isCurrent && (
-                <button
-                  onClick={() => handleUpgrade(tier.id)}
-                  disabled={loadingPlan === tier.id}
-                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-signal px-4 py-2 text-xs font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
-                >
-                  {loadingPlan === tier.id && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  {loadingPlan === tier.id ? "Redirecting…" : `Upgrade to ${tier.label}`}
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                {tier.key !== "free" && !isCurrent && (
+                  <button
+                    onClick={() => handleUpgrade(tier.key)}
+                    disabled={loadingPlan === tier.key}
+                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-signal px-4 py-2 text-xs font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
+                  >
+                    {loadingPlan === tier.key && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {loadingPlan === tier.key ? "Redirecting…" : `Upgrade to ${tier.label}`}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {region !== "international" && (
         <p className="text-[11px] text-mist/60">

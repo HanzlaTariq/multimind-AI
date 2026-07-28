@@ -3,11 +3,9 @@ import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { getStripe } from "@/lib/stripe";
-import { priceIdForPlan } from "@/lib/plans";
+import { priceIdForPlan, getUpgradablePlans } from "@/lib/plans";
 
 export const runtime = "nodejs";
-
-const UPGRADABLE_PLANS = ["basic", "pro", "business"];
 
 export async function POST(req) {
   const session = await getServerSession(authOptions);
@@ -17,11 +15,12 @@ export async function POST(req) {
 
   const { plan } = await req.json();
 
-  if (!UPGRADABLE_PLANS.includes(plan)) {
+  const upgradablePlans = await getUpgradablePlans();
+  if (!upgradablePlans.includes(plan)) {
     return Response.json({ error: "Please choose a valid plan" }, { status: 400 });
   }
 
-  const priceId = priceIdForPlan(plan);
+  const priceId = await priceIdForPlan(plan);
   if (!priceId) {
     return Response.json(
       { error: `Billing isn't configured yet for the ${plan} plan on the server.` },

@@ -108,10 +108,10 @@ export async function GET(req) {
   for (const row of creditsRaw) {
     if (row._id in creditsRemainingByPlan) creditsRemainingByPlan[row._id] = row.credits;
   }
-  const allowanceTotal = Object.entries(planBreakdown).reduce(
-    (sum, [plan, count]) => sum + count * creditsForPlan(plan),
-    0
-  );
+  let allowanceTotal = 0;
+  for (const [plan, count] of Object.entries(planBreakdown)) {
+    allowanceTotal += count * (await creditsForPlan(plan));
+  }
   const remainingTotal = Object.values(creditsRemainingByPlan).reduce((a, b) => a + b, 0);
 
   return Response.json({

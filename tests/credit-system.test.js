@@ -10,7 +10,7 @@ test("document tools use a predictable credit cost", () => {
   assert.equal(creditCostForTool("unknown-tool"), 1);
 });
 
-test("consuming credits resets monthly balances and deducts correctly", () => {
+test("consuming credits resets monthly balances and deducts correctly", async () => {
   const now = new Date("2026-07-22T12:00:00.000Z");
   const user = {
     plan: "free",
@@ -18,7 +18,7 @@ test("consuming credits resets monthly balances and deducts correctly", () => {
     creditsResetAt: new Date("2026-05-20T12:00:00.000Z"),
   };
 
-  const result = consumeCreditsForTool(user, "compress-pdf", now);
+  const result = await consumeCreditsForTool(user, "compress-pdf", now);
 
   assert.equal(result.canUse, true);
   assert.equal(result.creditsRemaining, 2);
