@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Loader2, Zap } from "lucide-react";
+import { Check, Loader2, Zap, Smartphone, CreditCard } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
 const PLAN_TIERS = [
   {
     id: "free",
     label: "Free",
-    price: "$0",
+    priceUSD: 0,
+    pricePKR: 0,
+    priceINR: 0,
     period: "forever",
     credits: 60,
     features: ["A small monthly allowance to try things out", "Smart model routing"],
@@ -17,7 +19,9 @@ const PLAN_TIERS = [
   {
     id: "basic",
     label: "Basic",
-    price: "$9.99",
+    priceUSD: 9.99,
+    pricePKR: 2799,
+    priceINR: 799,
     period: "/ month",
     credits: 1500,
     features: ["1,500 credits/month", "Smart model routing", "Full conversation history"],
@@ -25,7 +29,9 @@ const PLAN_TIERS = [
   {
     id: "pro",
     label: "Pro",
-    price: "$24.99",
+    priceUSD: 24.99,
+    pricePKR: 6999,
+    priceINR: 1999,
     period: "/ month",
     credits: 8000,
     features: ["8,000 credits/month", "Priority routing", "Unlimited history", "PDF export"],
@@ -33,20 +39,41 @@ const PLAN_TIERS = [
   {
     id: "business",
     label: "Business",
-    price: "$59.99",
+    priceUSD: 59.99,
+    pricePKR: 16999,
+    priceINR: 4999,
     period: "/ month",
     credits: 30000,
     features: ["30,000 credits/month", "Highest priority", "Everything in Pro"],
   },
 ];
 
+const REGIONS = [
+  { id: "international", label: "International", icon: CreditCard, note: "Card payment via Stripe" },
+  { id: "pakistan", label: "Pakistan", icon: Smartphone, note: "JazzCash" },
+  { id: "india", label: "India", icon: Smartphone, note: "Razorpay (UPI/cards)" },
+];
+
+function loadRazorpayScript() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Couldn't load Razorpay checkout"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function BillingTab() {
   const { settings } = useSettings();
   const searchParams = useSearchParams();
   const justUpgraded = searchParams.get("upgraded") === "1";
+  const paymentIssue = searchParams.get("payment");
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [loadingPortal, setLoadingPortal] = useState(false);
   const [error, setError] = useState("");
+  const [region, setRegion] = useState("international");
 
   const currentPlan = settings.plan || "free";
   const currentTierCredits = PLAN_TIERS.find((p) => p.id === currentPlan)?.credits || 60;
@@ -60,20 +87,13 @@ export default function BillingTab() {
     ? new Date(lastReset.getTime() + 30 * 24 * 60 * 60 * 1000)
     : null;
   const nextResetLabel = nextResetDate
-    ? nextResetDate.toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
+    ? nextResetDate.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
     : null;
   const nextResetTimeLabel = nextResetDate
-    ? nextResetDate.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? nextResetDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
     : null;
 
-  async function handleUpgrade(planId) {
+  async function handleStripeUpgrade(planId) {
     setLoadingPlan(planId);
     setError("");
     try {
@@ -91,6 +111,94 @@ export default function BillingTab() {
     }
   }
 
+  async function handleJazzCashUpgrade(planId) {
+    setLoadingPlan(planId);
+    setError("");
+    try {
+      const res = await fetch("/api/billing/jazzcash/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Couldn't start JazzCash checkout");
+
+      // Auto-submit a real form so JazzCash gets a proper browser POST.
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.checkoutUrl;
+      Object.entries(data.fields).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (err) {
+      setError(err.message);
+      setLoadingPlan(null);
+    }
+  }
+
+  async function handleRazorpayUpgrade(planId) {
+    setLoadingPlan(planId);
+    setError("");
+    try {
+      await loadRazorpayScript();
+
+      const res = await fetch("/api/billing/razorpay/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId }),
+      });
+      const order = await res.json();
+      if (!res.ok) throw new Error(order.error || "Couldn't start Razorpay checkout");
+
+      const rzp = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "MultiMind",
+        description: `${planId.charAt(0).toUpperCase()}${planId.slice(1)} plan — 1 month`,
+        order_id: order.orderId,
+        prefill: { name: order.name, email: order.email },
+        theme: { color: "#3b82f6" },
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch("/api/billing/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(response),
+            });
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
+            window.location.href = "/dashboard/settings?upgraded=1";
+          } catch (err) {
+            setError(err.message);
+            setLoadingPlan(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoadingPlan(null);
+          },
+        },
+      });
+      rzp.open();
+    } catch (err) {
+      setError(err.message);
+      setLoadingPlan(null);
+    }
+  }
+
+  function handleUpgrade(planId) {
+    if (region === "pakistan") return handleJazzCashUpgrade(planId);
+    if (region === "india") return handleRazorpayUpgrade(planId);
+    return handleStripeUpgrade(planId);
+  }
+
   async function handleManageBilling() {
     setLoadingPortal(true);
     setError("");
@@ -105,6 +213,12 @@ export default function BillingTab() {
     }
   }
 
+  function priceLabel(tier) {
+    if (region === "pakistan") return { amount: `Rs. ${tier.pricePKR.toLocaleString()}`, period: tier.period };
+    if (region === "india") return { amount: `₹${tier.priceINR.toLocaleString()}`, period: tier.period };
+    return { amount: `$${tier.priceUSD}`, period: tier.period };
+  }
+
   return (
     <div className="max-w-2xl space-y-6">
       <div>
@@ -116,6 +230,11 @@ export default function BillingTab() {
         <div className="flex items-center gap-2 rounded-lg border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-signal">
           <Check className="h-4 w-4" />
           Your plan is updated — thanks for upgrading!
+        </div>
+      )}
+      {paymentIssue && paymentIssue !== "1" && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+          Your payment didn't go through — no charge was made. Please try again.
         </div>
       )}
 
@@ -156,16 +275,41 @@ export default function BillingTab() {
         )}
       </div>
 
+      {/* Region / payment method selector */}
+      <div>
+        <p className="mb-2 text-xs text-mist">Where are you paying from?</p>
+        <div className="flex flex-wrap gap-2">
+          {REGIONS.map((r) => {
+            const Icon = r.icon;
+            const active = region === r.id;
+            return (
+              <button
+                key={r.id}
+                onClick={() => setRegion(r.id)}
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition ${
+                  active
+                    ? "border-signal bg-signal/10 text-signal"
+                    : "border-line text-mist hover:border-mist hover:text-paper"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {r.label}
+                <span className="text-mist/60">· {r.note}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         {PLAN_TIERS.map((tier) => {
           const isCurrent = currentPlan === tier.id;
+          const price = priceLabel(tier);
           return (
             <div
               key={tier.id}
               className={`rounded-2xl border p-5 ${
-                isCurrent
-                  ? "border-signal bg-surface shadow-lg shadow-signal/10"
-                  : "border-line bg-surface"
+                isCurrent ? "border-signal bg-surface shadow-lg shadow-signal/10" : "border-line bg-surface"
               }`}
             >
               <div className="flex items-center justify-between">
@@ -177,8 +321,8 @@ export default function BillingTab() {
                 )}
               </div>
               <div className="mt-1.5 flex items-baseline gap-1">
-                <span className="font-display text-2xl font-semibold text-paper">{tier.price}</span>
-                <span className="text-xs text-mist">{tier.period}</span>
+                <span className="font-display text-2xl font-semibold text-paper">{price.amount}</span>
+                <span className="text-xs text-mist">{price.period}</span>
               </div>
 
               <ul className="mt-4 space-y-1.5">
@@ -204,6 +348,13 @@ export default function BillingTab() {
           );
         })}
       </div>
+
+      {region !== "international" && (
+        <p className="text-[11px] text-mist/60">
+          {region === "pakistan" ? "JazzCash" : "Razorpay"} payments are one-time — they activate this plan
+          for 30 days. You'll need to pay again to renew (auto-renewal isn't available for this payment method yet).
+        </p>
+      )}
 
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
