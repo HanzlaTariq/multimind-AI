@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Conversation from "@/models/Conversation";
+import Project from "@/models/Project";
 import User from "@/models/User";
 import { routeToProvider } from "@/lib/providers";
 import { creditsForPlan, chargeCreditsAtomic } from "@/lib/plans";
@@ -48,6 +49,27 @@ function buildSystemPrompt(profile) {
   if (lines.length === 0) return BASE_SYSTEM_PROMPT;
 
   return `${BASE_SYSTEM_PROMPT}\n\nPersonalization for this user:\n${lines.join("\n")}`;
+}
+
+function buildProjectSystemPrompt(basePrompt, project) {
+  if (!project) return basePrompt;
+
+  const sections = [];
+  if (project.instructions?.trim()) {
+    sections.push(
+      `Project instructions (always follow these for every message in this project):\n${project.instructions.trim()}`
+    );
+  }
+  if (project.files?.length) {
+    const fileBlocks = project.files
+      .map((f) => `--- File: ${f.name} ---\n${f.content}`)
+      .join("\n\n");
+    sections.push(`Project reference files (use as context/knowledge for this project):\n\n${fileBlocks}`);
+  }
+
+  if (sections.length === 0) return basePrompt;
+
+  return `${basePrompt}\n\nYou are working inside a project called "${project.name}". Everything below is scoped to this project only.\n\n${sections.join("\n\n")}`;
 }
 
 // history: array of { prompt, answer } from earlier turns in this conversation
@@ -253,7 +275,8 @@ export async function POST(req) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { prompt, conversationId, attachment, temporary, clientHistory, editIndex } = await req.json();
+  const { prompt, conversationId, attachment, temporary, clientHistory, editIndex, projectId } =
+    await req.json();
 
   if ((!prompt || !prompt.trim()) && !attachment?.content) {
     return Response.json({ error: "Prompt cannot be empty" }, { status: 400 });
@@ -278,6 +301,15 @@ export async function POST(req) {
 
   const systemPrompt = buildSystemPrompt(user);
   const effectivePrompt = buildEffectivePrompt(prompt, attachment);
+
+  let project = null;
+  if (projectId) {
+    project = await Project.findOne({ _id: projectId, user: session.user.id });
+    if (!project) {
+      return Response.json({ error: "Project not found" }, { status: 404 });
+    }
+  }
+  const finalSystemPrompt = buildProjectSystemPrompt(systemPrompt, project);
 
   // Smart routing: pick ONE best-fit model for this prompt (among providers
   // whose API key is configured), affordable within the user's remaining
@@ -320,7 +352,7 @@ export async function POST(req) {
   const trimmedHistory = history.slice(-10);
 
   const caller = PROVIDER_CALLERS[chosenProvider.id];
-  const result = await caller(effectivePrompt, trimmedHistory, systemPrompt);
+  const result = await caller(effectivePrompt, trimmedHistory, finalSystemPrompt);
 
   const best =
     result.status === "ok" && result.text && result.text.trim()
@@ -366,6 +398,7 @@ export async function POST(req) {
       user: session.user.id,
       title: turn.prompt.slice(0, 60),
       turns: [turn],
+      project: projectId || null,
     });
   }
 

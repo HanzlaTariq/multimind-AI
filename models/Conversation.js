@@ -35,6 +35,8 @@ const ConversationSchema = new mongoose.Schema(
     turns: [TurnSchema],
     shareId: { type: String, unique: true, sparse: true },
     isPublic: { type: Boolean, default: false },
+    pinned: { type: Boolean, default: false },
+    project: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
   },
   { timestamps: true }
 );

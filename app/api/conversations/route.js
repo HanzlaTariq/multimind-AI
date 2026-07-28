@@ -11,10 +11,19 @@ export async function GET(req) {
 
   await dbConnect();
 
-  const conversations = await Conversation.find({ user: session.user.id })
-    .select("title updatedAt createdAt")
-    .sort({ updatedAt: -1 })
-    .limit(50);
+  const { searchParams } = new URL(req.url);
+  const projectId = searchParams.get("projectId");
+
+  // Outside a project, only show conversations that don't belong to any
+  // project — project chats live inside their project workspace instead,
+  // keeping the main "Recents" list uncluttered.
+  const filter = { user: session.user.id };
+  filter.project = projectId ? projectId : null;
+
+  const conversations = await Conversation.find(filter)
+    .select("title updatedAt createdAt pinned project")
+    .sort({ pinned: -1, updatedAt: -1 })
+    .limit(100);
 
   return Response.json({ conversations });
 }

@@ -1,6 +1,12 @@
 import { X } from "lucide-react";
 
-export default function DeleteModal({ open, onClose, onConfirm }) {
+export default function DeleteModal({
+  open,
+  onClose,
+  onConfirm,
+  title = "Are you sure you want to delete this chat?",
+  message = "This action cannot be undone. The chat and its messages will be removed from your conversation history.",
+}) {
   if (!open) return null;
 
   return (
@@ -12,7 +18,7 @@ export default function DeleteModal({ open, onClose, onConfirm }) {
               Confirm delete
             </p>
             <h3 className="mt-3 text-xl font-semibold text-paper">
-              Are you sure you want to delete this chat?
+              {title}
             </h3>
           </div>
           <button
@@ -24,7 +30,7 @@ export default function DeleteModal({ open, onClose, onConfirm }) {
           </button>
         </div>
         <p className="mb-6 text-sm leading-6 text-mist/80">
-          This action cannot be undone. The chat and its messages will be removed from your conversation history.
+          {message}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <button

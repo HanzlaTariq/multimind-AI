@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSettings } from "@/lib/SettingsContext";
 import Sidebar from "./Sidebar";
 import ChatHeader from "./ChatHeader";
@@ -11,12 +13,19 @@ import DeleteModal from "./DeleteModal";
 import TemporaryBanner from "./TemporaryBanner";
 import Suggestions from "./Suggestions";
 import ShareModal from "@/components/ShareModal";
+import ProjectSettingsModal from "./ProjectSettingsModal";
 import { exportConversationToPdf } from "@/lib/pdfExport";
-import { Sparkles } from "lucide-react";
+import { Sparkles, FolderKanban, ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 
-export default function ChatDashboard({ user }) {
+export default function ChatDashboard({ user, project = null }) {
   const { settings } = useSettings();
-  
+  const router = useRouter();
+  const projectId = project?._id || null;
+  const [projectData, setProjectData] = useState(project);
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
+  const [deleteProjectConfirmOpen, setDeleteProjectConfirmOpen] = useState(false);
+  const [deletingProject, setDeletingProject] = useState(false);
+
   // State
   const [conversations, setConversations] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -43,7 +52,8 @@ export default function ChatDashboard({ user }) {
   // Fetch conversations
   useEffect(() => {
     fetchConversations();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -53,7 +63,8 @@ export default function ChatDashboard({ user }) {
   // API functions
   async function fetchConversations() {
     try {
-      const res = await fetch("/api/conversations");
+      const url = projectId ? `/api/conversations?projectId=${projectId}` : "/api/conversations";
+      const res = await fetch(url);
       const data = await res.json();
       if (res.ok) setConversations(data.conversations || []);
     } catch (e) {
@@ -88,7 +99,6 @@ export default function ChatDashboard({ user }) {
     setShareInfo({ isPublic: false, shareId: null });
   }
 
-  // ✅ ADD THIS FUNCTION - Ye missing tha
   function handleToggleTemporary() {
     startNewChat();
     setTemporaryMode((v) => !v);
@@ -119,6 +129,7 @@ export default function ChatDashboard({ user }) {
         : {
             prompt: text,
             conversationId,
+            projectId,
             attachment: useAttachment,
             temporary: temporaryMode,
             clientHistory: temporaryMode
@@ -160,7 +171,6 @@ export default function ChatDashboard({ user }) {
     }
   }
 
-  // ✅ FIX: handleSend ko define karo
   async function handleSend(text, opts = {}) {
     await sendPrompt(text, opts);
   }
@@ -183,6 +193,7 @@ export default function ChatDashboard({ user }) {
         body: JSON.stringify({
           prompt: newText,
           conversationId,
+          projectId,
           editIndex: index,
           temporary: temporaryMode,
           clientHistory: temporaryMode
@@ -226,6 +237,7 @@ export default function ChatDashboard({ user }) {
         : {
             prompt: turn.prompt,
             conversationId,
+            projectId,
             temporary: temporaryMode,
             clientHistory: temporaryMode
               ? turns.slice(0, index).map((t) => ({ prompt: t.prompt, answer: t.best?.text || "" }))
@@ -283,6 +295,89 @@ export default function ChatDashboard({ user }) {
     }
   }
 
+  // Whole-conversation rename — shows up in the sidebar list.
+  async function renameConversation(id, newTitle) {
+    setConversations((prev) => prev.map((c) => (c._id === id ? { ...c, title: newTitle } : c)));
+    try {
+      await fetch(`/api/conversations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+    } catch (e) {
+      fetchConversations();
+    }
+  }
+
+  // Whole-conversation pin — pins the chat itself to the top of the
+  // sidebar (distinct from pinning a single answer inside a chat).
+  async function toggleConversationPin(id, nextPinned) {
+    setConversations((prev) => prev.map((c) => (c._id === id ? { ...c, pinned: nextPinned } : c)));
+    try {
+      await fetch(`/api/conversations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned: nextPinned }),
+      });
+    } catch (e) {
+      fetchConversations();
+    }
+  }
+
+  async function handleSaveProjectSettings({ name, instructions }) {
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, instructions }),
+      });
+      const data = await res.json();
+      if (!res.ok) return false;
+      setProjectData(data.project);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function handleUploadProjectFile({ name, content }) {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/files`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, content }),
+      });
+      const data = await res.json();
+      if (!res.ok) return false;
+      setProjectData(data.project);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function handleDeleteProjectFile(fileId) {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/files?fileId=${fileId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok) setProjectData(data.project);
+    } catch (e) {
+      // Fail quietly
+    }
+  }
+
+  async function handleDeleteProject() {
+    setDeletingProject(true);
+    try {
+      await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+      router.push("/dashboard/projects");
+    } catch (e) {
+      setDeletingProject(false);
+    }
+  }
+
   function scrollToTurn(index) {
     setOutlineOpen(false);
     turnRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -310,6 +405,8 @@ export default function ChatDashboard({ user }) {
           setDeleteConversationId(id);
           setDeleteModalOpen(true);
         }}
+        onRenameConversation={renameConversation}
+        onToggleConversationPin={toggleConversationPin}
         user={user}
         initials={initials}
         settings={settings}
@@ -317,6 +414,31 @@ export default function ChatDashboard({ user }) {
 
       {/* Main content */}
       <div className="flex min-w-0 flex-1 flex-col">
+        {project && (
+          <div className="flex items-center gap-2 border-b border-line/70 bg-surface/40 px-4 py-2">
+            <Link
+              href="/dashboard/projects"
+              className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+              title="Back to projects"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </Link>
+            <FolderKanban className="h-3.5 w-3.5 shrink-0 text-signal" />
+            <span className="truncate text-xs font-medium text-paper">{projectData.name}</span>
+            <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-mist/60">
+              Project
+            </span>
+            <button
+              onClick={() => setProjectSettingsOpen(true)}
+              className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs text-mist transition hover:bg-surface2 hover:text-paper"
+              title="Project instructions & files"
+            >
+              <SettingsIcon className="h-3.5 w-3.5" />
+              Instructions & files
+            </button>
+          </div>
+        )}
+
         <ChatHeader
           onToggleSidebar={() => setSidebarOpen(true)}
           onNewChat={startNewChat}
@@ -338,7 +460,7 @@ export default function ChatDashboard({ user }) {
             <div className="mb-8 flex items-center gap-3">
               <Sparkles className="h-7 w-7 shrink-0 text-groq" />
               <h1 className="font-serif text-3xl italic tracking-tight text-paper sm:text-5xl">
-                Back at it, {firstName(user?.name)}
+                {project ? projectData.name : `Back at it, ${firstName(user?.name)}`}
               </h1>
             </div>
             <ChatInput
@@ -355,7 +477,7 @@ export default function ChatDashboard({ user }) {
               onSend={handleSend}
               isEmpty={isEmpty}
             />
-            <Suggestions onSelect={(text) => setPrompt(text)} />
+            {!project && <Suggestions onSelect={(text) => setPrompt(text)} />}
           </div>
         ) : (
           <>
@@ -421,6 +543,32 @@ export default function ChatDashboard({ user }) {
         shareInfo={shareInfo}
         onShareInfoChange={setShareInfo}
       />
+
+      {/* Project Settings Modal */}
+      {project && projectSettingsOpen && (
+        <ProjectSettingsModal
+          project={projectData}
+          onClose={() => setProjectSettingsOpen(false)}
+          onSave={handleSaveProjectSettings}
+          onUploadFile={handleUploadProjectFile}
+          onDeleteFile={handleDeleteProjectFile}
+          onRequestDeleteProject={() => {
+            setProjectSettingsOpen(false);
+            setDeleteProjectConfirmOpen(true);
+          }}
+        />
+      )}
+
+      {/* Delete Project Modal */}
+      {project && (
+        <DeleteModal
+          open={deleteProjectConfirmOpen}
+          onClose={() => !deletingProject && setDeleteProjectConfirmOpen(false)}
+          onConfirm={handleDeleteProject}
+          title={`Delete "${projectData.name}"?`}
+          message="This deletes the project, its instructions, and its files. Chats inside it move back to your main Recents list instead of being deleted."
+        />
+      )}
     </div>
   );
 }

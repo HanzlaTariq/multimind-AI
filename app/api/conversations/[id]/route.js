@@ -61,6 +61,12 @@ export async function PATCH(req, { params }) {
       return Response.json({ error: "Turn not found" }, { status: 404 });
     }
     conversation.turns[body.turnIndex].pinned = body.pinned;
+  } else if (typeof body.pinned === "boolean") {
+    conversation.pinned = body.pinned;
+  }
+
+  if (typeof body.title === "string" && body.title.trim()) {
+    conversation.title = body.title.trim().slice(0, 80);
   }
 
   if (typeof body.isPublic === "boolean") {

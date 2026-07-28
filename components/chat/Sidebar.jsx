@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
@@ -13,8 +13,124 @@ import {
   Settings as SettingsIcon,
   Gift,
   Search,
+  Pin,
+  PinOff,
+  Pencil,
+  Check,
+  FolderKanban,
 } from "lucide-react";
 import SearchModal from "./SearchModal";
+
+function ConversationRow({ c, active, onOpen, onDelete, onRename, onTogglePin }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(c.title);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  function startEdit(e) {
+    e.stopPropagation();
+    setValue(c.title);
+    setEditing(true);
+  }
+
+  function save() {
+    const trimmed = value.trim();
+    setEditing(false);
+    if (trimmed && trimmed !== c.title) onRename(c._id, trimmed);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex w-full items-center gap-1 rounded-lg bg-surface px-2.5 py-1.5">
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              save();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              setEditing(false);
+            }
+          }}
+          className="min-w-0 flex-1 bg-transparent text-sm text-paper outline-none"
+        />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            save();
+          }}
+          className="shrink-0 rounded p-1 text-signal hover:bg-surface2"
+          aria-label="Save name"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onOpen(c._id)}
+      className={`group flex w-full items-center gap-1.5 rounded-lg px-2.5 py-2 text-left text-sm transition ${
+        active ? "bg-surface text-paper" : "text-mist hover:bg-surface hover:text-paper"
+      }`}
+    >
+      {c.pinned && <Pin className="h-3 w-3 shrink-0 text-signal" />}
+      <span className="flex-1 truncate">{c.title}</span>
+
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onTogglePin(c._id, !c.pinned);
+        }}
+        className={`shrink-0 rounded p-1 transition hover:bg-surface2 hover:text-signal ${
+          c.pinned ? "text-signal" : "text-mist/0 group-hover:text-mist/60"
+        }`}
+        aria-label={c.pinned ? "Unpin conversation" : "Pin conversation"}
+        title={c.pinned ? "Unpin" : "Pin"}
+      >
+        {c.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+      </span>
+
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={startEdit}
+        className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-surface2 hover:text-paper group-hover:text-mist/60"
+        aria-label="Rename conversation"
+        title="Rename"
+      >
+        <Pencil className="h-3.5 w-3.5" />
+      </span>
+
+      <span
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(c._id);
+        }}
+        className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/60"
+        aria-label="Delete conversation"
+        title="Delete"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </span>
+    </button>
+  );
+}
 
 export default function Sidebar({
   open,
@@ -24,6 +140,8 @@ export default function Sidebar({
   onNewChat,
   onOpenConversation,
   onDeleteConversation,
+  onRenameConversation,
+  onToggleConversationPin,
   user,
   initials,
   settings,
@@ -40,6 +158,9 @@ export default function Sidebar({
     document.addEventListener("keydown", handleKeydown);
     return () => document.removeEventListener("keydown", handleKeydown);
   }, []);
+
+  const pinnedConversations = conversations.filter((c) => c.pinned);
+  const recentConversations = conversations.filter((c) => !c.pinned);
 
   return (
     <>
@@ -89,6 +210,16 @@ export default function Sidebar({
           </button>
 
           <Link
+            href="/dashboard/projects"
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <FolderKanban className="h-3.5 w-3.5" />
+            </span>
+            Projects
+          </Link>
+
+          <Link
             href="/dashboard/document-tools"
             className="mb-3 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
           >
@@ -108,37 +239,48 @@ export default function Sidebar({
             Refer & Earn
           </Link>
 
-          <div className="mb-1 mt-2 px-2.5 text-xs font-medium text-mist/60">Recents</div>
-
-          <div className="flex-1 space-y-0.5 overflow-y-auto scrollbar-thin">
+          <div className="flex-1 space-y-3 overflow-y-auto scrollbar-thin">
             {conversations.length === 0 && (
               <p className="px-2.5 py-4 text-xs text-mist/50">Your chats will show up here.</p>
             )}
-            {conversations.map((c) => (
-              <button
-                key={c._id}
-                onClick={() => onOpenConversation(c._id)}
-                className={`group flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition ${
-                  conversationId === c._id
-                    ? "bg-surface text-paper"
-                    : "text-mist hover:bg-surface hover:text-paper"
-                }`}
-              >
-                <span className="flex-1 truncate">{c.title}</span>
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteConversation(c._id);
-                  }}
-                  className="shrink-0 rounded p-1 text-mist/0 transition hover:bg-red-500/10 hover:text-red-400 group-hover:text-mist/60"
-                  aria-label="Delete conversation"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </span>
-              </button>
-            ))}
+
+            {pinnedConversations.length > 0 && (
+              <div>
+                <div className="mb-1 px-2.5 text-xs font-medium text-mist/60">Pinned</div>
+                <div className="space-y-0.5">
+                  {pinnedConversations.map((c) => (
+                    <ConversationRow
+                      key={c._id}
+                      c={c}
+                      active={conversationId === c._id}
+                      onOpen={onOpenConversation}
+                      onDelete={onDeleteConversation}
+                      onRename={onRenameConversation}
+                      onTogglePin={onToggleConversationPin}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {recentConversations.length > 0 && (
+              <div>
+                <div className="mb-1 px-2.5 text-xs font-medium text-mist/60">Recents</div>
+                <div className="space-y-0.5">
+                  {recentConversations.map((c) => (
+                    <ConversationRow
+                      key={c._id}
+                      c={c}
+                      active={conversationId === c._id}
+                      onOpen={onOpenConversation}
+                      onDelete={onDeleteConversation}
+                      onRename={onRenameConversation}
+                      onTogglePin={onToggleConversationPin}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-2 flex items-center justify-between rounded-lg px-2 py-2">
