@@ -63,7 +63,7 @@ export default function BillingTab() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/plans")
+    fetch("/api/plans", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => setPlans(Array.isArray(data.plans) ? data.plans : []))
       .catch(() => setPlans([]))
