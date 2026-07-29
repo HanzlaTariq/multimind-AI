@@ -41,6 +41,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "free",
     },
+    // 60 here is only a last-resort fallback for the rare case a user gets
+    // created without credits explicitly set. The real source of truth for
+    // free-plan credits is PlanConfig (lib/plans.js) — every place that
+    // creates a new user must pass `credits: await creditsForPlan("free")`
+    // explicitly, since this schema default can't read the DB.
     credits: { type: Number, default: 60 },
     creditsResetAt: { type: Date, default: Date.now },
     // Only set for JazzCash/Razorpay purchases, which don't auto-renew like

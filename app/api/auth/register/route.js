@@ -5,6 +5,7 @@ import { sendSignupOtpEmail } from "@/lib/email";
 import PendingSignup from "@/models/PendingSignup";
 import User from "@/models/User";
 import { applyReferralBonus, REFERRAL_BONUS_CREDITS } from "@/lib/referral";
+import { creditsForPlan } from "@/lib/plans";
 
 export async function POST(req) {
   try {
@@ -57,6 +58,9 @@ export async function POST(req) {
         email: pendingSignup.email,
         password: pendingSignup.password,
         provider: "credentials",
+        // Explicit, so this always matches whatever the admin currently has
+        // the free plan set to — not the schema's hardcoded fallback.
+        credits: await creditsForPlan("free"),
       });
 
       if (pendingSignup.referredByCode) {
