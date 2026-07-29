@@ -2,12 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { creditCostForTool, consumeCreditsForTool } from "../lib/plans.js";
 
-test("document tools use a predictable credit cost", () => {
-  assert.equal(creditCostForTool("compress-pdf"), 1);
-  assert.equal(creditCostForTool("convert-spreadsheet"), 1);
-  assert.equal(creditCostForTool("convert-document"), 2);
-  assert.equal(creditCostForTool("pdf-to-images"), 2);
-  assert.equal(creditCostForTool("unknown-tool"), 1);
+test("document tools use a predictable credit cost", async () => {
+  assert.equal(await creditCostForTool("compress-pdf"), 1);
+  assert.equal(await creditCostForTool("convert-spreadsheet"), 1);
+  assert.equal(await creditCostForTool("convert-document"), 2);
+  assert.equal(await creditCostForTool("pdf-to-images"), 2);
+  assert.equal(await creditCostForTool("unknown-tool"), 1);
 });
 
 test("consuming credits resets monthly balances and deducts correctly", async () => {
@@ -26,13 +26,13 @@ test("consuming credits resets monthly balances and deducts correctly", async ()
   assert.equal(user.creditsResetAt.getTime(), now.getTime());
 });
 
-test("text to speech cost scales with input length", () => {
+test("text to speech cost scales with input length", async () => {
   const shortText = "Hello world";
-  assert.equal(creditCostForTool("text-to-speech", { text: shortText }), 3);
+  assert.equal(await creditCostForTool("text-to-speech", { text: shortText }), 3);
 
   const longText = "a".repeat(450);
-  assert.equal(creditCostForTool("text-to-speech", { text: longText }), 3);
+  assert.equal(await creditCostForTool("text-to-speech", { text: longText }), 3);
 
   const longerText = "a".repeat(800);
-  assert.equal(creditCostForTool("text-to-speech", { text: longerText }), 4);
+  assert.equal(await creditCostForTool("text-to-speech", { text: longerText }), 4);
 });

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import { getToolCreditConfigs } from "@/lib/plans";
 import {
   FileDown,
   Image as ImageIcon,
@@ -18,14 +19,13 @@ import {
   Mic,
 } from "lucide-react";
 
-const TOOLS = [
+const TOOLS_META = [
   {
     id: "compress-pdf",
     href: "/dashboard/document-tools/compress-pdf",
     icon: FileDown,
     title: "Compress File",
     desc: "Shrink a PDF, image, or Office doc",
-    badge: "1 credit",
   },
   {
     id: "convert-image",
@@ -33,7 +33,6 @@ const TOOLS = [
     icon: ImageIcon,
     title: "Convert Image",
     desc: "JPG, PNG, WebP, AVIF — any to any",
-    badge: "1 credit",
   },
   {
     id: "convert-spreadsheet",
@@ -41,7 +40,6 @@ const TOOLS = [
     icon: Sheet,
     title: "Convert Spreadsheet",
     desc: "XLSX, CSV, ODS — any to any",
-    badge: "1 credit",
   },
   {
     id: "convert-document",
@@ -49,7 +47,6 @@ const TOOLS = [
     icon: FileType,
     title: "Convert Document",
     desc: "Word, PDF, PowerPoint — any to any",
-    badge: "2 credits",
   },
   {
     id: "merge-pdf",
@@ -57,7 +54,6 @@ const TOOLS = [
     icon: Combine,
     title: "Merge PDFs",
     desc: "Combine multiple PDFs into one",
-    badge: "1 credit",
   },
   {
     id: "split-pdf",
@@ -65,7 +61,6 @@ const TOOLS = [
     icon: Scissors,
     title: "Split PDF",
     desc: "Pull a page range into a new PDF",
-    badge: "1 credit",
   },
   {
     id: "images-to-pdf",
@@ -73,7 +68,6 @@ const TOOLS = [
     icon: Images,
     title: "Images to PDF",
     desc: "Combine photos into a single PDF",
-    badge: "1 credit",
   },
   {
     id: "pdf-to-images",
@@ -81,7 +75,6 @@ const TOOLS = [
     icon: FileImage,
     title: "PDF to Images",
     desc: "Export each page as an image",
-    badge: "2 credits",
   },
   {
     id: "text-to-speech",
@@ -89,19 +82,34 @@ const TOOLS = [
     icon: Mic,
     title: "Text to Speech",
     desc: "Generate speech, or clone your own voice",
-    badge: "3+ credits",
   },
 ];
 
-const ICON_BY_ID = Object.fromEntries(TOOLS.map((t) => [t.id, t.icon]));
+// Builds the "1 credit" / "2 credits" / "3+ credits" badge text from the
+// live, admin-editable tool cost config instead of a hardcoded string.
+function badgeFor(toolId, costs) {
+  const tool = costs[toolId];
+  if (!tool) return "";
+  if (tool.costType === "per-length") {
+    const n = tool.minCost || 1;
+    return `${n}+ credit${n === 1 ? "" : "s"}`;
+  }
+  return `${tool.cost} credit${tool.cost === 1 ? "" : "s"}`;
+}
+
+const ICON_BY_ID = Object.fromEntries(TOOLS_META.map((t) => [t.id, t.icon]));
 
 export default async function DocumentToolsPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   await dbConnect();
-  const user = await User.findById(session.user.id).select("recentTools").lean();
+  const [user, toolCosts] = await Promise.all([
+    User.findById(session.user.id).select("recentTools").lean(),
+    getToolCreditConfigs(),
+  ]);
   const recentTools = user?.recentTools || [];
+  const TOOLS = TOOLS_META.map((t) => ({ ...t, badge: badgeFor(t.id, toolCosts) }));
 
   return (
     <div className="min-h-screen bg-ink px-4 py-10 sm:px-8">

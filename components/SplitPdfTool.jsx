@@ -11,7 +11,7 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export default function SplitPdfTool() {
+export default function SplitPdfTool({ creditCost = 1 }) {
   useTrackTool("split-pdf", "Split PDF", "/dashboard/document-tools/split-pdf");
 
   const [file, setFile] = useState(null);
@@ -85,7 +85,7 @@ export default function SplitPdfTool() {
         <div className="mb-2 flex items-center gap-2">
           <h1 className="font-display text-2xl font-semibold text-paper">Split PDF</h1>
           <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-            1 credit • Instant
+            {creditCost} credit{creditCost === 1 ? "" : "s"} • Instant
           </span>
         </div>
         <p className="text-sm text-mist">Pull a page range out of a PDF into its own file.</p>

@@ -12,6 +12,7 @@ import {
   Clock,
   History,
   Tag,
+  Wrench,
 } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
@@ -20,6 +21,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/conversations", label: "Conversations", icon: MessagesSquare },
   { href: "/admin/plans", label: "Plans & Pricing", icon: Tag },
+  { href: "/admin/tool-costs", label: "Tool Costs", icon: Wrench },
   { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/pending-signups", label: "Pending signups", icon: Clock },
   { href: "/admin/activity", label: "Activity log", icon: History },

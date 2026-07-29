@@ -51,6 +51,10 @@ const UserSchema = new mongoose.Schema(
     // Only set for JazzCash/Razorpay purchases, which don't auto-renew like
     // Stripe subscriptions do. Null for free users and Stripe subscribers.
     planExpiresAt: { type: Date, default: null },
+    // Timestamp of the last time this user opened the notification bell —
+    // used to compute unread count/list. null means "never viewed", so
+    // every existing notification counts as unread the first time.
+    notificationsSeenAt: { type: Date, default: null },
     lowCreditEmailSentAt: { type: Date, default: null },
 
     // Admin panel

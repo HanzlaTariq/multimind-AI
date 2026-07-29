@@ -1,17 +1,21 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { getToolCreditConfigs } from "@/lib/plans";
 import DocumentConvertTool from "@/components/DocumentConvertTool";
 
 export default async function ConvertImagePage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
+  const costs = await getToolCreditConfigs();
+  const cost = costs["convert-image"]?.cost ?? 1;
+
   return (
     <DocumentConvertTool
       title="Convert Image"
       description="Convert between JPG, PNG, WebP, and AVIF, with optional resizing."
-      badge="1 credit • Instant"
+      badge={`${cost} credit${cost === 1 ? "" : "s"} • Instant`}
       accept="image/*"
       endpoint="/api/documents/convert-image"
       targetFormats={[

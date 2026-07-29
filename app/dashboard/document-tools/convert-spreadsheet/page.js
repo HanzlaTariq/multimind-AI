@@ -1,17 +1,21 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { getToolCreditConfigs } from "@/lib/plans";
 import DocumentConvertTool from "@/components/DocumentConvertTool";
 
 export default async function ConvertSpreadsheetPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
+  const costs = await getToolCreditConfigs();
+  const cost = costs["convert-spreadsheet"]?.cost ?? 1;
+
   return (
     <DocumentConvertTool
       title="Convert Spreadsheet"
       description="Convert between XLSX, CSV, and ODS. Note: CSV export only includes the first sheet."
-      badge="1 credit • Instant"
+      badge={`${cost} credit${cost === 1 ? "" : "s"} • Instant`}
       accept=".xlsx,.xls,.csv,.ods"
       endpoint="/api/documents/convert-spreadsheet"
       targetFormats={[

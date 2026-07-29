@@ -19,7 +19,7 @@ import { useTrackTool } from "@/lib/useTrackTool";
 
 const MAX_CHARS = 5000;
 
-export default function TextToSpeechTool() {
+export default function TextToSpeechTool({ minCreditCost = 3 }) {
   useTrackTool("text-to-speech", "Text to Speech", "/dashboard/document-tools/text-to-speech");
 
   const [text, setText] = useState("");
@@ -164,7 +164,7 @@ export default function TextToSpeechTool() {
         <div className="mb-2 flex items-center gap-2">
           <h1 className="font-display text-2xl font-semibold text-paper">Text to Speech</h1>
           <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-            3+ credits 
+            {minCreditCost}+ credits
           </span>
         </div>
         <p className="text-sm text-mist">

@@ -13,7 +13,7 @@ function formatBytes(bytes) {
 
 const ACCEPT = ".pdf,.jpg,.jpeg,.png,.webp,.docx,.pptx,.xlsx";
 
-export default function PdfCompressTool() {
+export default function PdfCompressTool({ creditCost = 1 }) {
   useTrackTool("compress-pdf", "Compress File", "/dashboard/document-tools/compress-pdf");
 
   const [file, setFile] = useState(null);
@@ -92,7 +92,7 @@ export default function PdfCompressTool() {
         <div className="mb-2 flex items-center gap-2">
           <h1 className="font-display text-2xl font-semibold text-paper">Compress File</h1>
           <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-            1 credit • Instant
+            {creditCost} credit{creditCost === 1 ? "" : "s"} • Instant
           </span>
         </div>
         <p className="text-sm text-mist">

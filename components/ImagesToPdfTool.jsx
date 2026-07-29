@@ -19,7 +19,7 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export default function ImagesToPdfTool() {
+export default function ImagesToPdfTool({ creditCost = 1 }) {
   useTrackTool("images-to-pdf", "Images to PDF", "/dashboard/document-tools/images-to-pdf");
 
   const [files, setFiles] = useState([]);
@@ -95,7 +95,7 @@ export default function ImagesToPdfTool() {
         <div className="mb-2 flex items-center gap-2">
           <h1 className="font-display text-2xl font-semibold text-paper">Images to PDF</h1>
           <span className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[10px] text-mist">
-            1 credit • Instant
+            {creditCost} credit{creditCost === 1 ? "" : "s"} • Instant
           </span>
         </div>
         <p className="text-sm text-mist">
