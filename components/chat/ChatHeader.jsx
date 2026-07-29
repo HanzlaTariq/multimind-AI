@@ -14,12 +14,18 @@ export default function ChatHeader({
   pinnedCount,
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
-      <button onClick={onToggleSidebar} aria-label="Open sidebar" className="lg:hidden">
+    <header className="flex items-center justify-between gap-3 px-4 py-3 pr-14 sm:px-6 sm:pr-20">
+      {" "}
+      <button
+        onClick={onToggleSidebar}
+        aria-label="Open sidebar"
+        className="lg:hidden"
+      >
         <Menu className="h-5 w-5 text-paper" />
       </button>
-      <span className="font-display text-sm font-semibold text-paper lg:hidden">MultiMind</span>
-
+      <span className="font-display text-sm font-semibold text-paper lg:hidden">
+        MultiMind
+      </span>
       <div className="ml-auto flex items-center gap-2">
         <button
           onClick={onToggleTemporary}
@@ -50,7 +56,7 @@ export default function ChatHeader({
                 <span className="hidden sm:inline">Share</span>
               </button>
             )}
-            
+
             <button
               onClick={onExport}
               className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
@@ -59,7 +65,7 @@ export default function ChatHeader({
               <FileDown className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Export</span>
             </button>
-            
+
             <button
               onClick={onToggleOutline}
               className="flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs text-mist transition hover:border-mist/40 hover:text-paper"
