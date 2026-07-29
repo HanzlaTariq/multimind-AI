@@ -137,10 +137,40 @@ const FAQS = [
     a: "Yes. Paid users can manage billing from the settings page at any time.",
   },
 ];
-
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQS.map((faq) => ({
+        "@type": "Question",
+        name: faq.q,
+        acceptedAnswer: { "@type": "Answer", text: faq.a },
+      })),
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "MultiMind",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      description:
+        "MultiMind brings ChatGPT, Claude, Gemini, Groq, DeepSeek, and future models into one focused workspace so you can ask once and get the strongest answer.",
+      offers: PLAN_TIERS.map((plan) => ({
+        "@type": "Offer",
+        name: plan.name,
+        price: plan.price.replace("$", ""),
+        priceCurrency: "USD",
+      })),
+    },
+  ],
+};
 export default function Home() {
   return (
     <div className="min-h-screen bg-ink pt-20 md:pt-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
 
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8">

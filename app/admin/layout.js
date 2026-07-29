@@ -5,8 +5,8 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export const metadata = {
   title: "Admin · MultiMind",
+  robots: { index: false, follow: false },
 };
-
 export default async function AdminLayout({ children }) {
   const session = await getServerSession(authOptions);
 
