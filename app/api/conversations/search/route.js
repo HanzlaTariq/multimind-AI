@@ -46,14 +46,35 @@ export async function GET(req) {
 
   await dbConnect();
 
-  const items = await Conversation.find(
-    { user: session.user.id, $text: { $search: q } },
-    { score: { $meta: "textScore" } }
-  )
+  // Message content (turns.prompt / turns.responses.text) is encrypted
+  // at rest, so it can't be searched with a Mongo $text index anymore —
+  // the Conversation model's post-find hook decrypts it for us here,
+  // and we filter in the application layer instead. Title stays
+  // unencrypted and is checked the same way.
+  //
+  // This is capped to the user's most recently updated 300 conversations
+  // for performance. For very large per-user histories, a proper
+  // solution would be a separate encrypted search index (e.g. HMAC'd
+  // tokens per word) — flagging that as a possible future improvement.
+  const candidates = await Conversation.find({ user: session.user.id })
     .select("title turns updatedAt")
-    .sort({ score: { $meta: "textScore" } })
-    .limit(20)
+    .sort({ updatedAt: -1 })
+    .limit(300)
     .lean();
+
+  const ql = q.toLowerCase();
+  const matches = candidates.filter((c) => {
+    if ((c.title || "").toLowerCase().includes(ql)) return true;
+    for (const turn of c.turns || []) {
+      if ((turn.prompt || "").toLowerCase().includes(ql)) return true;
+      for (const r of turn.responses || []) {
+        if ((r.text || "").toLowerCase().includes(ql)) return true;
+      }
+    }
+    return false;
+  });
+
+  const items = matches.slice(0, 20);
 
   return Response.json({
     items: items.map((c) => ({

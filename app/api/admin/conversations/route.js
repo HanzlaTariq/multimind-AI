@@ -16,32 +16,54 @@ export async function GET(req) {
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
-  const filter = {};
-  if (q) {
-    filter.title = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-  }
+  // Date range can still be filtered at the DB level (createdAt isn't
+  // encrypted). Title is encrypted at rest, so a `q` search can't be
+  // done as a Mongo regex anymore — the Conversation model's post-find
+  // hook decrypts title for us, and we filter by it in the application
+  // layer below instead.
+  const dbFilter = {};
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   if (from || to) {
-    filter.createdAt = {};
-    if (from) filter.createdAt.$gte = new Date(from);
+    dbFilter.createdAt = {};
+    if (from) dbFilter.createdAt.$gte = new Date(from);
     if (to) {
       const end = new Date(to);
       end.setHours(23, 59, 59, 999);
-      filter.createdAt.$lte = end;
+      dbFilter.createdAt.$lte = end;
     }
   }
 
-  const [items, total] = await Promise.all([
-    Conversation.find(filter)
+  let items, total;
+
+  if (q) {
+    // Search path: fetch matching-by-date conversations (title is
+    // decrypted by the model hook), filter by title in JS, then
+    // paginate the filtered set. Capped to keep this bounded on very
+    // large datasets.
+    const ql = q.toLowerCase();
+    const all = await Conversation.find(dbFilter)
       .select("title user turns isPublic shareId createdAt updatedAt")
       .populate("user", "name email")
       .sort({ updatedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean(),
-    Conversation.countDocuments(filter),
-  ]);
+      .limit(5000)
+      .lean();
+
+    const matched = all.filter((c) => (c.title || "").toLowerCase().includes(ql));
+    total = matched.length;
+    items = matched.slice((page - 1) * limit, (page - 1) * limit + limit);
+  } else {
+    [items, total] = await Promise.all([
+      Conversation.find(dbFilter)
+        .select("title user turns isPublic shareId createdAt updatedAt")
+        .populate("user", "name email")
+        .sort({ updatedAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Conversation.countDocuments(dbFilter),
+    ]);
+  }
 
   const shaped = items.map((c) => ({
     _id: c._id,
