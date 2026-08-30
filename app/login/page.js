@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,6 +12,21 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Someone can also sign up for the first time via Google straight from
+    // the login page — make sure that path also gets a device-matched theme
+    // (see the same cookie set on the signup page).
+    try {
+      const prefersLight =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches;
+      document.cookie = `mm_theme_pref=${prefersLight ? "light" : "midnight"}; path=/; max-age=${60 * 60 * 24}`;
+    } catch (e) {
+      // matchMedia unavailable — the server just falls back to the default
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();

@@ -3,6 +3,8 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import dbConnect from "@/lib/mongodb";
+import User from "@/models/User";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 
@@ -121,9 +123,28 @@ export const viewport = {
 export default async function RootLayout({ children }) {
   const session = await getServerSession(authOptions);
 
+  // Render the signed-in user's saved theme straight from the DB during SSR
+  // so it's correct on the very first paint. Previously the page always
+  // rendered with no theme (falling back to the dark "midnight" default)
+  // and only switched to the real theme once client JS read localStorage
+  // and/or the /api/user/settings fetch resolved a moment later — that gap
+  // is what caused the "black flash before Sepia" on reload, and it was
+  // worse on a device/browser that didn't have mm-theme in localStorage yet.
+  let serverTheme = null;
+  if (session?.user?.id) {
+    try {
+      await dbConnect();
+      const dbUser = await User.findById(session.user.id).select("theme").lean();
+      serverTheme = dbUser?.theme || null;
+    } catch (e) {
+      // DB hiccup — the client-side script below will still cover it
+    }
+  }
+
   return (
     <html
       lang="en"
+      data-theme={serverTheme || undefined}
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}
     >
       <head>
@@ -135,8 +156,21 @@ export default async function RootLayout({ children }) {
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var t = localStorage.getItem('mm-theme');
-                if (t) document.documentElement.setAttribute('data-theme', t);
+                // Only needed when the server couldn't already set the theme
+                // (logged-out visitor, or a DB hiccup during render).
+                if (!document.documentElement.getAttribute('data-theme')) {
+                  var stored = localStorage.getItem('mm-theme');
+                  if (stored) {
+                    document.documentElement.setAttribute('data-theme', stored);
+                  } else if (
+                    window.matchMedia &&
+                    window.matchMedia('(prefers-color-scheme: light)').matches
+                  ) {
+                    // Brand-new visitor with no saved preference yet — match
+                    // their device instead of always defaulting to dark.
+                    document.documentElement.setAttribute('data-theme', 'light');
+                  }
+                }
               } catch (e) {}
             `,
           }}

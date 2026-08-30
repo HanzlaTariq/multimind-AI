@@ -21,6 +21,8 @@ const THEME_OPTIONS = [
 export default function PreferencesTab() {
   const { settings, updateSettings } = useSettings();
   const [notifPermissionDenied, setNotifPermissionDenied] = useState(false);
+  const selectedFontClass =
+    FONT_OPTIONS.find((f) => f.value === settings.chatFont)?.className || "font-body";
 
   async function handleNotifyToggle(value) {
     if (value && typeof Notification !== "undefined") {
@@ -82,6 +84,18 @@ export default function PreferencesTab() {
             </button>
           ))}
         </div>
+        {/* This only affects text inside the chat itself (message bubbles),
+            not the rest of the app's UI — so the difference doesn't show up
+            elsewhere on this settings page. This preview line makes the
+            change visible immediately, in the same font your chat messages
+            will actually use. */}
+        <p
+          className={`mt-3 rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-paper ${
+            selectedFontClass
+          }`}
+        >
+          The quick brown fox jumps over the lazy dog — this is how your chat messages will look.
+        </p>
       </div>
 
       <div className="divide-y divide-line">

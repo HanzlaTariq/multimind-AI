@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 const DEFAULT_SETTINGS = {
   name: "",
@@ -58,8 +58,28 @@ export function SettingsProvider({ children }) {
     }
   }, [settings.theme]);
 
-  const updateSettings = useCallback(async (patch) => {
-    setSettings((prev) => ({ ...prev, ...patch })); // optimistic
+  // Rapid-fire updates (e.g. tapping through theme/font options quickly) used
+  // to fire one PATCH per click. Those requests can resolve out of order, so
+  // an older response could land after a newer one and snap the UI back to a
+  // stale value — the "poora portal flick karta hai" flicker. To fix that we
+  // (a) coalesce every change made within a short window into a single
+  // request instead of one-per-click, and (b) never have more than one
+  // request in flight at a time, so responses can never arrive out of order.
+  const pendingPatchRef = useRef({});
+  const resolversRef = useRef([]);
+  const inFlightRef = useRef(false);
+  const debounceTimerRef = useRef(null);
+
+  const flushPendingSettings = useCallback(async () => {
+    if (inFlightRef.current) return; // already sending — will re-flush when it finishes
+    if (Object.keys(pendingPatchRef.current).length === 0) return;
+
+    const patch = pendingPatchRef.current;
+    const resolvers = resolversRef.current;
+    pendingPatchRef.current = {};
+    resolversRef.current = [];
+    inFlightRef.current = true;
+
     try {
       const res = await fetch("/api/user/settings", {
         method: "PATCH",
@@ -69,13 +89,37 @@ export function SettingsProvider({ children }) {
       const data = await res.json();
       if (res.ok && data.user) {
         setSettings((prev) => ({ ...prev, ...data.user }));
-        return { ok: true };
+        resolvers.forEach((r) => r.resolve({ ok: true }));
+      } else {
+        resolvers.forEach((r) => r.resolve({ ok: false, error: data.error }));
       }
-      return { ok: false, error: data.error };
     } catch (e) {
-      return { ok: false, error: "Network error" };
+      resolvers.forEach((r) => r.resolve({ ok: false, error: "Network error" }));
+    } finally {
+      inFlightRef.current = false;
+      // More changes came in while this request was in flight — send those now.
+      if (Object.keys(pendingPatchRef.current).length > 0) {
+        flushPendingSettings();
+      }
     }
   }, []);
+
+  const updateSettings = useCallback(
+    (patch) => {
+      setSettings((prev) => ({ ...prev, ...patch })); // optimistic — instant, no network wait
+      pendingPatchRef.current = { ...pendingPatchRef.current, ...patch };
+
+      return new Promise((resolve) => {
+        resolversRef.current.push({ resolve });
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+          debounceTimerRef.current = null;
+          flushPendingSettings();
+        }, 250);
+      });
+    },
+    [flushPendingSettings],
+  );
 
   return (
     <SettingsContext.Provider value={{ settings, loading, refresh, updateSettings }}>

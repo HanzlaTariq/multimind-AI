@@ -28,6 +28,22 @@ function SignupForm() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    // New accounts should start on whatever theme matches this device
+    // instead of always defaulting to dark "Midnight". Same cookie trick as
+    // mm_ref above so it also survives the redirect through Google's OAuth
+    // flow, where we can't pass it in a request body.
+    try {
+      const prefersLight =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches;
+      document.cookie = `mm_theme_pref=${prefersLight ? "light" : "midnight"}; path=/; max-age=${60 * 60 * 24}`;
+    } catch (e) {
+      // matchMedia unavailable — the server just falls back to the default
+    }
+  }, []);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -35,10 +51,16 @@ function SignupForm() {
     setLoading(true);
 
     try {
+      const prefersLight =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches;
+      const theme = prefersLight ? "light" : "midnight";
+
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(otpSent ? { ...form, otp } : { ...form, ref }),
+        body: JSON.stringify(otpSent ? { ...form, otp, theme } : { ...form, ref, theme }),
       });
 
       const data = await res.json();

@@ -9,7 +9,8 @@ import { creditsForPlan } from "@/lib/plans";
 
 export async function POST(req) {
   try {
-    const { name, email, password, otp, ref } = await req.json();
+    const { name, email, password, otp, ref, theme } = await req.json();
+    const themePref = theme === "light" ? "light" : "midnight";
     const normalizedEmail = email?.toLowerCase().trim();
 
     if (!name || !normalizedEmail || !password) {
@@ -61,6 +62,7 @@ export async function POST(req) {
         // Explicit, so this always matches whatever the admin currently has
         // the free plan set to — not the schema's hardcoded fallback.
         credits: await creditsForPlan("free"),
+        theme: pendingSignup.themePref || "midnight",
       });
 
       if (pendingSignup.referredByCode) {
@@ -96,6 +98,7 @@ export async function POST(req) {
         password: hashedPassword,
         otpHash,
         referredByCode: (ref || "").trim().toUpperCase(),
+        themePref,
         expiresAt,
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
