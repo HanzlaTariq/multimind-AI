@@ -166,14 +166,14 @@ const jsonLd = {
 };
 export default function Home() {
   return (
-    <div className="min-h-screen bg-ink pt-20 md:pt-0">
+    <div className="min-h-screen bg-ink pt-16 sm:pt-20 md:pt-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Navbar />
 
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-10  sm:px-8">
         <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div className="max-w-xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-mist">

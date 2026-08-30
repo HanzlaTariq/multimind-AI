@@ -113,7 +113,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-line/60 bg-ink/85 backdrop-blur-xl md:sticky md:top-0">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-8">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2 sm:px-8">
         <Link href="/" className="group flex items-center gap-3">
           <span className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-signal/20 bg-signal/10 shadow-lg shadow-signal/10 transition group-hover:border-signal/40">
             <Sparkles className="h-4 w-4 text-signal" />
