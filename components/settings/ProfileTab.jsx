@@ -1,11 +1,66 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Check, Loader2, Camera } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Loader2, Camera, ChevronDown } from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
 const ROLE_OPTIONS = ["Software engineer", "Student", "Designer", "Marketer", "Founder", "Other"];
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+// A plain <select> hands its arrow/spacing over to the OS — on Android
+// Chrome that renders as a native picker with its own icon shoved hard
+// against the right edge, which looked broken next to our other custom
+// inputs. This is a button + list styled to match the rest of the form
+// instead, so it looks (and is spaced) the same on every device.
+function RoleDropdown({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between rounded-lg border border-line bg-surface px-3.5 py-2.5 text-left text-sm text-paper outline-none transition focus:border-signal"
+      >
+        <span className={value ? "text-paper" : "text-mist/50"}>{value || "Select one"}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-mist transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1.5 overflow-hidden rounded-lg border border-line bg-surface shadow-xl shadow-black/30">
+          {ROLE_OPTIONS.map((r) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => {
+                onChange(r);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-sm transition hover:bg-surface2 ${
+                value === r ? "text-signal" : "text-paper"
+              }`}
+            >
+              {r}
+              {value === r && <Check className="h-3.5 w-3.5" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProfileTab() {
   const { settings, updateSettings, refresh } = useSettings();
@@ -144,18 +199,7 @@ export default function ProfileTab() {
 
       <div>
         <label className="mb-1.5 block text-sm text-mist">What best describes your work?</label>
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-paper outline-none focus:border-signal"
-        >
-          <option value="">Select one</option>
-          {ROLE_OPTIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+        <RoleDropdown value={role} onChange={setRole} />
       </div>
 
       <div>

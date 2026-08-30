@@ -220,7 +220,7 @@ export default function Sidebar({
               <Search className="h-3.5 w-3.5" />
             </span>
             <span className="flex-1 text-left">Search chats</span>
-            <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-mist/60">
+            <span className="hidden rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-mist/60 lg:inline-block">
               ⌘K
             </span>
           </button>
