@@ -2,27 +2,54 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Loader2, Zap, Smartphone, CreditCard, Receipt, ExternalLink } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Zap,
+  Smartphone,
+  CreditCard,
+  Receipt,
+  ExternalLink,
+} from "lucide-react";
 import { useSettings } from "@/lib/SettingsContext";
 
+let plansCache = null;
 // Generic feature bullets shown under each plan card. The numbers/labels
 // come from the live plan data (credits, discount, badge) — only these
 // short descriptive lines are fixed copy.
 function featuresFor(tier) {
   if (tier.key === "free") {
-    return ["A small monthly allowance to try things out", "Smart model routing"];
+    return [
+      "A small monthly allowance to try things out",
+      "Smart model routing",
+    ];
   }
-  const lines = [`${tier.monthlyCredits.toLocaleString()} credits/month`, "Smart model routing"];
-  if (tier.key === "pro") lines.push("Priority routing", "Unlimited history", "PDF export");
-  else if (tier.key === "business") lines.push("Highest priority", "Everything in Pro");
+  const lines = [
+    `${tier.monthlyCredits.toLocaleString()} credits/month`,
+    "Smart model routing",
+  ];
+  if (tier.key === "pro")
+    lines.push("Priority routing", "Unlimited history", "PDF export");
+  else if (tier.key === "business")
+    lines.push("Highest priority", "Everything in Pro");
   else lines.push("Full conversation history");
   return lines;
 }
 
 const REGIONS = [
-  { id: "international", label: "International", icon: CreditCard, note: "Card payment via Stripe" },
+  {
+    id: "international",
+    label: "International",
+    icon: CreditCard,
+    note: "Card payment via Stripe",
+  },
   { id: "pakistan", label: "Pakistan", icon: Smartphone, note: "JazzCash" },
-  { id: "india", label: "India", icon: Smartphone, note: "Razorpay (UPI/cards)" },
+  {
+    id: "india",
+    label: "India",
+    icon: Smartphone,
+    note: "Razorpay (UPI/cards)",
+  },
 ];
 
 function loadRazorpayScript() {
@@ -37,7 +64,7 @@ function loadRazorpayScript() {
 }
 
 export default function BillingTab() {
-  const { settings } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
   const searchParams = useSearchParams();
   const justUpgraded = searchParams.get("upgraded") === "1";
   const paymentIssue = searchParams.get("payment");
@@ -61,31 +88,48 @@ export default function BillingTab() {
       })
       .catch(() => setHistory([]));
   }, []);
-
   useEffect(() => {
     fetch("/api/plans", { cache: "no-store" })
       .then((res) => res.json())
-      .then((data) => setPlans(Array.isArray(data.plans) ? data.plans : []))
-      .catch(() => setPlans([]))
+      .then((data) => {
+        const list = Array.isArray(data.plans) ? data.plans : [];
+        plansCache = list;
+        setPlans(list);
+      })
+      .catch(() => setPlans((prev) => (prev.length ? prev : [])))
       .finally(() => setPlansLoading(false));
   }, []);
 
   const currentPlan = settings.plan || "free";
-  const currentTierCredits = plans.find((p) => p.key === currentPlan)?.monthlyCredits || 60;
+  const dataReady = !plansLoading && !settingsLoading;
+  const currentTierCredits =
+    plans.find((p) => p.key === currentPlan)?.monthlyCredits || 60;
   const creditsUsedPercent = Math.min(
     100,
-    Math.max(0, Math.round((1 - (settings.credits ?? 0) / currentTierCredits) * 100))
+    Math.max(
+      0,
+      Math.round((1 - (settings.credits ?? 0) / currentTierCredits) * 100),
+    ),
   );
 
-  const lastReset = settings.creditsResetAt ? new Date(settings.creditsResetAt) : null;
+  const lastReset = settings.creditsResetAt
+    ? new Date(settings.creditsResetAt)
+    : null;
   const nextResetDate = lastReset
     ? new Date(lastReset.getTime() + 30 * 24 * 60 * 60 * 1000)
     : null;
   const nextResetLabel = nextResetDate
-    ? nextResetDate.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
+    ? nextResetDate.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
     : null;
   const nextResetTimeLabel = nextResetDate
-    ? nextResetDate.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+    ? nextResetDate.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+      })
     : null;
 
   async function handleStripeUpgrade(planId) {
@@ -116,7 +160,8 @@ export default function BillingTab() {
         body: JSON.stringify({ plan: planId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Couldn't start JazzCash checkout");
+      if (!res.ok)
+        throw new Error(data.error || "Couldn't start JazzCash checkout");
 
       // Auto-submit a real form so JazzCash gets a proper browser POST.
       const form = document.createElement("form");
@@ -149,7 +194,8 @@ export default function BillingTab() {
         body: JSON.stringify({ plan: planId }),
       });
       const order = await res.json();
-      if (!res.ok) throw new Error(order.error || "Couldn't start Razorpay checkout");
+      if (!res.ok)
+        throw new Error(order.error || "Couldn't start Razorpay checkout");
 
       const rzp = new window.Razorpay({
         key: order.keyId,
@@ -168,7 +214,10 @@ export default function BillingTab() {
               body: JSON.stringify(response),
             });
             const verifyData = await verifyRes.json();
-            if (!verifyRes.ok) throw new Error(verifyData.error || "Payment verification failed");
+            if (!verifyRes.ok)
+              throw new Error(
+                verifyData.error || "Payment verification failed",
+              );
             window.location.href = "/dashboard/settings?upgraded=1";
           } catch (err) {
             setError(err.message);
@@ -200,7 +249,8 @@ export default function BillingTab() {
     try {
       const res = await fetch("/api/billing/portal", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Couldn't open billing portal");
+      if (!res.ok)
+        throw new Error(data.error || "Couldn't open billing portal");
       window.location.href = data.url;
     } catch (err) {
       setError(err.message);
@@ -213,14 +263,18 @@ export default function BillingTab() {
     if (region === "pakistan") {
       return {
         amount: `Rs. ${tier.pricePKR.toLocaleString()}`,
-        listAmount: tier.discountPercent ? `Rs. ${tier.listPricePKR.toLocaleString()}` : null,
+        listAmount: tier.discountPercent
+          ? `Rs. ${tier.listPricePKR.toLocaleString()}`
+          : null,
         period,
       };
     }
     if (region === "india") {
       return {
         amount: `₹${tier.priceINR.toLocaleString()}`,
-        listAmount: tier.discountPercent ? `₹${tier.listPriceINR.toLocaleString()}` : null,
+        listAmount: tier.discountPercent
+          ? `₹${tier.listPriceINR.toLocaleString()}`
+          : null,
         period,
       };
     }
@@ -234,8 +288,12 @@ export default function BillingTab() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h2 className="font-display text-lg font-semibold text-paper">Plan &amp; Billing</h2>
-        <p className="mt-1 text-sm text-mist">Manage your subscription and credits.</p>
+        <h2 className="font-display text-lg font-semibold text-paper">
+          Plan &amp; Billing
+        </h2>
+        <p className="mt-1 text-sm text-mist">
+          Manage your subscription and credits.
+        </p>
       </div>
 
       {justUpgraded && (
@@ -251,56 +309,65 @@ export default function BillingTab() {
       )}
 
       <div className="rounded-2xl border border-line bg-surface p-5">
-        <div className="flex items-center justify-between text-sm">
-          <span className="flex items-center gap-1.5 text-paper">
-            <Zap className="h-3.5 w-3.5 text-signal" />
-            Credits remaining
-          </span>
-          <span className="font-mono text-paper">
-            {settings.credits ?? 0} / {currentTierCredits}
-          </span>
-        </div>
-        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface2">
-          <div
-            className="h-full rounded-full bg-signal transition-all"
-            style={{ width: `${100 - creditsUsedPercent}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-mist">
-          Credits refill automatically once a month. Each message uses credits based on which AI model answered it.
-        </p>
-        {nextResetLabel && (
-          <p className="mt-2 text-xs text-mist">
-            Next reset: <span className="text-paper">{nextResetLabel} at {nextResetTimeLabel}</span>
-          </p>
-        )}
+        {!dataReady ? (
+          <div className="animate-pulse space-y-3">
+            <div className="h-4 w-40 rounded bg-surface2" />
+            <div className="h-2 w-full rounded-full bg-surface2" />
+            <div className="h-3 w-56 rounded bg-surface2" />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5 text-paper">
+                <Zap className="h-3.5 w-3.5 text-signal" />
+                Credits remaining
+              </span>
+              <span className="font-mono text-paper">
+                {settings.credits ?? 0} / {currentTierCredits}
+              </span>
+            </div>
+            <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface2">
+              <div
+                className="h-full rounded-full bg-signal transition-all"
+                style={{ width: `${100 - creditsUsedPercent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-mist">
+              Credits refill automatically once a month. Each message uses credits based on which AI model answered it.
+            </p>
+            {nextResetLabel && (
+              <p className="mt-2 text-xs text-mist">
+                Next reset: <span className="text-paper">{nextResetLabel} at {nextResetTimeLabel}</span>
+              </p>
+            )}
 
-        {settings.planExpiresAt && (
-          <p className="mt-2 text-xs text-amber-400">
-            This plan was paid via JazzCash/Razorpay and expires on{" "}
-            <span className="font-medium">
-              {new Date(settings.planExpiresAt).toLocaleDateString(undefined, {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </span>{" "}
-            — pay again before then to keep it, or it drops back to Free automatically.
-          </p>
-        )}
+            {settings.planExpiresAt && (
+              <p className="mt-2 text-xs text-amber-400">
+                This plan was paid via JazzCash/Razorpay and expires on{" "}
+                <span className="font-medium">
+                  {new Date(settings.planExpiresAt).toLocaleDateString(undefined, {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </span>{" "}
+                — pay again before then to keep it, or it drops back to Free automatically.
+              </p>
+            )}
 
-        {currentPlan !== "free" && (
-          <button
-            onClick={handleManageBilling}
-            disabled={loadingPortal}
-            className="mt-4 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-xs font-medium text-paper transition hover:border-mist disabled:opacity-60"
-          >
-            {loadingPortal && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            {loadingPortal ? "Opening…" : "Manage billing"}
-          </button>
+            {currentPlan !== "free" && (
+              <button
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+                className="mt-4 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-xs font-medium text-paper transition hover:border-mist disabled:opacity-60"
+              >
+                {loadingPortal && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {loadingPortal ? "Opening…" : "Manage billing"}
+              </button>
+            )}
+          </>
         )}
       </div>
-
       {/* Region / payment method selector */}
       <div>
         <p className="mb-2 text-xs text-mist">Where are you paying from?</p>
@@ -341,7 +408,9 @@ export default function BillingTab() {
               <div
                 key={tier.key}
                 className={`relative rounded-2xl border p-5 ${
-                  isCurrent ? "border-signal bg-surface shadow-lg shadow-signal/10" : "border-line bg-surface"
+                  isCurrent
+                    ? "border-signal bg-surface shadow-lg shadow-signal/10"
+                    : "border-line bg-surface"
                 }`}
               >
                 {tier.badge && (
@@ -350,7 +419,9 @@ export default function BillingTab() {
                   </span>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-lg font-semibold text-paper">{tier.label}</p>
+                  <p className="font-display text-lg font-semibold text-paper">
+                    {tier.label}
+                  </p>
                   {isCurrent && (
                     <span className="rounded-full bg-signal/15 px-2.5 py-0.5 text-[10px] font-medium text-signal">
                       Current
@@ -358,19 +429,28 @@ export default function BillingTab() {
                   )}
                 </div>
                 <div className="mt-1.5 flex items-baseline gap-1.5">
-                  <span className="font-display text-2xl font-semibold text-paper">{price.amount}</span>
+                  <span className="font-display text-2xl font-semibold text-paper">
+                    {price.amount}
+                  </span>
                   <span className="text-xs text-mist">{price.period}</span>
                   {price.listAmount && (
-                    <span className="text-xs text-mist/60 line-through">{price.listAmount}</span>
+                    <span className="text-xs text-mist/60 line-through">
+                      {price.listAmount}
+                    </span>
                   )}
                 </div>
                 {tier.discountPercent > 0 && (
-                  <p className="mt-0.5 text-[11px] font-medium text-signal">{tier.discountPercent}% off</p>
+                  <p className="mt-0.5 text-[11px] font-medium text-signal">
+                    {tier.discountPercent}% off
+                  </p>
                 )}
 
                 <ul className="mt-4 space-y-1.5">
                   {featuresFor(tier).map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-mist">
+                    <li
+                      key={f}
+                      className="flex items-start gap-2 text-xs text-mist"
+                    >
                       <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
                       {f}
                     </li>
@@ -383,8 +463,12 @@ export default function BillingTab() {
                     disabled={loadingPlan === tier.key}
                     className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-signal px-4 py-2 text-xs font-semibold text-ink transition hover:brightness-110 disabled:opacity-60"
                   >
-                    {loadingPlan === tier.key && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    {loadingPlan === tier.key ? "Redirecting…" : `Upgrade to ${tier.label}`}
+                    {loadingPlan === tier.key && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                    {loadingPlan === tier.key
+                      ? "Redirecting…"
+                      : `Upgrade to ${tier.label}`}
                   </button>
                 )}
               </div>
@@ -395,8 +479,10 @@ export default function BillingTab() {
 
       {region !== "international" && (
         <p className="text-[11px] text-mist/60">
-          {region === "pakistan" ? "JazzCash" : "Razorpay"} payments are one-time — they activate this plan
-          for 30 days. You'll need to pay again to renew (auto-renewal isn't available for this payment method yet).
+          {region === "pakistan" ? "JazzCash" : "Razorpay"} payments are
+          one-time — they activate this plan for 30 days. You'll need to pay
+          again to renew (auto-renewal isn't available for this payment method
+          yet).
         </p>
       )}
 
@@ -440,7 +526,9 @@ export default function BillingTab() {
         )}
 
         {history?.length === 0 && (
-          <p className="py-2 text-xs text-mist/60">No payments yet — your paid invoices will show up here.</p>
+          <p className="py-2 text-xs text-mist/60">
+            No payments yet — your paid invoices will show up here.
+          </p>
         )}
 
         {history?.length > 0 && (
@@ -462,14 +550,22 @@ export default function BillingTab() {
                     </span>
                   </p>
                   <p className="mt-0.5 truncate font-mono text-[10px] text-mist/50">
-                    {h.gateway === "jazzcash" ? "JazzCash" : h.gateway === "razorpay" ? "Razorpay" : "Stripe"}
+                    {h.gateway === "jazzcash"
+                      ? "JazzCash"
+                      : h.gateway === "razorpay"
+                        ? "Razorpay"
+                        : "Stripe"}
                     {" · "}
                     Ref: {h.reference}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="font-medium text-paper">
-                    {h.currency === "PKR" ? "Rs. " : h.currency === "INR" ? "₹" : "$"}
+                    {h.currency === "PKR"
+                      ? "Rs. "
+                      : h.currency === "INR"
+                        ? "₹"
+                        : "$"}
                     {h.amount.toLocaleString()}
                   </span>
                   {h.receiptUrl && (
@@ -490,8 +586,9 @@ export default function BillingTab() {
         )}
 
         <p className="mt-3 text-[10px] text-mist/50">
-          For your security, we only keep a payment reference number here — never full card or bank
-          account numbers. Stripe payments link to an official receipt.
+          For your security, we only keep a payment reference number here —
+          never full card or bank account numbers. Stripe payments link to an
+          official receipt.
         </p>
       </div>
     </div>
