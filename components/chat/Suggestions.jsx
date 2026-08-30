@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { MessageCircle, GraduationCap, Briefcase, Code2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MessageCircle, GraduationCap, Briefcase, Code2, ChevronDown } from "lucide-react";
 
 // Grouped by audience, not by feature, so every kind of user — student,
 // freelancer/business owner, or someone just handling everyday tasks —
@@ -53,42 +53,62 @@ const CATEGORIES = [
 ];
 
 export default function Suggestions({ onSelect }) {
-  const [activeId, setActiveId] = useState(CATEGORIES[0].id);
-  const activeCategory = CATEGORIES.find((c) => c.id === activeId) || CATEGORIES[0];
+  const [openId, setOpenId] = useState(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpenId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <div className="mt-4 flex w-full max-w-xl flex-col items-center gap-3">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {CATEGORIES.map((c) => {
-          const isActive = c.id === activeId;
-          return (
+    <div
+      ref={containerRef}
+      className="mt-4 flex w-full max-w-xl flex-wrap items-start justify-center gap-2"
+    >
+      {CATEGORIES.map((c) => {
+        const isOpen = c.id === openId;
+        return (
+          <div key={c.id} className="relative">
             <button
-              key={c.id}
-              onClick={() => setActiveId(c.id)}
+              onClick={() => setOpenId(isOpen ? null : c.id)}
               className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium transition ${
-                isActive
+                isOpen
                   ? "border-mist/50 bg-surface2 text-paper"
                   : "border-line bg-surface text-paper/60 hover:border-mist/30 hover:text-paper/90"
               }`}
             >
               <c.icon className="h-3.5 w-3.5" />
               {c.label}
+              <ChevronDown
+                className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
+              />
             </button>
-          );
-        })}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {activeCategory.prompts.map((p) => (
-          <button
-            key={p.label}
-            onClick={() => onSelect(p.prompt)}
-            className="rounded-full border border-line bg-surface px-4 py-2 text-sm text-paper/90 transition hover:border-mist/40 hover:bg-surface2"
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+            {isOpen && (
+              <div className="absolute left-1/2 top-full z-20 mt-2 w-48 -translate-x-1/2 overflow-hidden rounded-2xl border border-line bg-surface p-1.5 shadow-xl">
+                {c.prompts.map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => {
+                      onSelect(p.prompt);
+                      setOpenId(null);
+                    }}
+                    className="block w-full rounded-xl px-3 py-2 text-left text-sm text-paper/90 transition hover:bg-surface2"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
