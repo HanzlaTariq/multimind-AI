@@ -485,22 +485,20 @@ export default function ChatDashboard({ user, project = null }) {
                 {project ? projectData.name : `Back at it, ${firstName(user?.name)}`}
               </h1>
             </div>
-            <div className="w-full px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <ChatInput
-                prompt={prompt}
-                setPrompt={setPrompt}
-                pending={pending}
-                attachment={attachment}
-                setAttachment={setAttachment}
-                imageMode={imageMode}
-                setImageMode={setImageMode}
-                temporaryMode={temporaryMode}
-                error={error}
-                setError={setError}
-                onSend={handleSend}
-                isEmpty={isEmpty}
-              />
-            </div>
+            <ChatInput
+              prompt={prompt}
+              setPrompt={setPrompt}
+              pending={pending}
+              attachment={attachment}
+              setAttachment={setAttachment}
+              imageMode={imageMode}
+              setImageMode={setImageMode}
+              temporaryMode={temporaryMode}
+              error={error}
+              setError={setError}
+              onSend={handleSend}
+              isEmpty={isEmpty}
+            />
             {!project && <Suggestions onSelect={(text) => setPrompt(text)} />}
           </div>
         ) : (
@@ -520,22 +518,20 @@ export default function ChatDashboard({ user, project = null }) {
               bottomRef={bottomRef}
               onShare={()=>setShareModalOpen(true)}
             />
-            <div className="w-full border-t border-line/70 bg-ink px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-              <ChatInput
-                prompt={prompt}
-                setPrompt={setPrompt}
-                pending={pending}
-                attachment={attachment}
-                setAttachment={setAttachment}
-                imageMode={imageMode}
-                setImageMode={setImageMode}
-                temporaryMode={temporaryMode}
-                error={error}
-                setError={setError}
-                onSend={handleSend}
-                isEmpty={isEmpty}
-              />
-            </div>
+            <ChatInput
+              prompt={prompt}
+              setPrompt={setPrompt}
+              pending={pending}
+              attachment={attachment}
+              setAttachment={setAttachment}
+              imageMode={imageMode}
+              setImageMode={setImageMode}
+              temporaryMode={temporaryMode}
+              error={error}
+              setError={setError}
+              onSend={handleSend}
+              isEmpty={isEmpty}
+            />
           </>
         )}
       </div>
