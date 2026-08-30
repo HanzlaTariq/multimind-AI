@@ -303,12 +303,21 @@ export default function Sidebar({
 
           <div className="mt-2 flex items-center justify-between rounded-lg px-2 py-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 font-mono text-xs font-semibold text-paper">
-                {initials}
-              </div>
+              {settings.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={settings.image}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface2 font-mono text-xs font-semibold text-paper">
+                  {initials}
+                </div>
+              )}
               <div className="min-w-0">
                 <p className="truncate text-sm text-paper">{user?.name}</p>
-                <p className="text-xs text-mist/60">
+                <p className="truncate text-xs text-mist/60">
                   {settings.plan === "free"
                     ? "Free plan"
                     : `${settings.plan.charAt(0).toUpperCase()}${settings.plan.slice(1)} plan`}
