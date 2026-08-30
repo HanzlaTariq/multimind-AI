@@ -24,8 +24,11 @@ export default function ChatHeader({
       >
         <Menu className="h-5 w-5 text-paper" />
       </button>
-      <span className="font-display text-sm font-semibold text-paper lg:hidden">
-        MultiMind
+      <span className="flex items-center gap-2 lg:hidden">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-gemini via-groq to-deepseek">
+          <span className="h-2 w-2 rounded-sm bg-ink" />
+        </span>
+        <span className="font-display text-sm font-semibold text-paper">MultiMind</span>
       </span>
       <div className="ml-auto flex items-center gap-2">
         <button
