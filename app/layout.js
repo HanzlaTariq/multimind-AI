@@ -118,6 +118,11 @@ export const viewport = {
   width: "device-width",
   initialScale: 1,
   interactiveWidget: "resizes-content",
+  // "cover" lets the page draw under the phone's status bar / gesture
+  // nav bar, which is what makes env(safe-area-inset-*) resolve to a
+  // real pixel value instead of 0 — without it the chat input pill
+  // sits flush against (and gets covered by) the on-screen nav bar.
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({ children }) {
