@@ -1,4 +1,5 @@
 import { Menu, FileDown, Share2, ListTree, EyeOff, Pin } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function ChatHeader({
   onToggleSidebar,
@@ -14,7 +15,7 @@ export default function ChatHeader({
   pinnedCount,
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 px-4 py-3 pr-14 sm:px-6 sm:pr-20">
+    <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
       {" "}
       <button
         onClick={onToggleSidebar}
@@ -81,6 +82,8 @@ export default function ChatHeader({
             </button>
           </>
         )}
+
+        <NotificationBell />
       </div>
     </header>
   );

@@ -70,7 +70,7 @@ export default function NotificationBell() {
   if (status !== "authenticated") return null;
 
   return (
-    <div ref={containerRef} className="fixed right-4 top-3 z-40 sm:right-6">
+    <div ref={containerRef} className="relative">
       <button
         onClick={toggleOpen}
         aria-label="Notifications"
