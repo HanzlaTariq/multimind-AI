@@ -13,8 +13,14 @@ export async function GET() {
   await dbConnect();
 
   const projects = await Project.find({ user: session.user.id })
-    .select("name instructions updatedAt createdAt files")
-    .sort({ updatedAt: -1 });
+    // Note: not selecting files.content here — each project file's full
+    // text content could be sizeable, and this list view only needs a
+    // count, not the content. Pulling that content over the wire for
+    // every project on a slow connection was a big chunk of why this page
+    // felt slow to load.
+    .select("name instructions updatedAt createdAt files.name files.size")
+    .sort({ updatedAt: -1 })
+    .lean();
 
   // Attach a lightweight chat count per project without loading full turns.
   const counts = await Conversation.aggregate([

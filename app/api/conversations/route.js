@@ -23,7 +23,8 @@ export async function GET(req) {
   const conversations = await Conversation.find(filter)
     .select("title updatedAt createdAt pinned project")
     .sort({ pinned: -1, updatedAt: -1 })
-    .limit(100);
+    .limit(100)
+    .lean();
 
   return Response.json({ conversations });
 }

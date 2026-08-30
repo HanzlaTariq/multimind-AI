@@ -42,6 +42,17 @@ const ConversationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Every list view (Recents sidebar, a project's chat list) filters by
+// `user` (+ `project`) and sorts by pinned/updatedAt — without an index
+// Mongo has to scan the whole conversations collection (every user's chats)
+// to answer that, which is what was making "Projects" and "Back to
+// dashboard" feel slow even for an account with zero conversations, since
+// the cost scales with the size of the whole collection, not this user's.
+ConversationSchema.index({ user: 1, project: 1, pinned: -1, updatedAt: -1 });
+// The Projects page's per-project chat count aggregates by `project` alone
+// (no `user` in that query), so it needs its own index too.
+ConversationSchema.index({ project: 1 });
+
 // Full-text search on `title` no longer works via a Mongo index, since
 // title is encrypted at rest (see below) — ciphertext isn't meaningfully
 // indexable. Title/content search is done in the application layer

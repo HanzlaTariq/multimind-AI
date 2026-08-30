@@ -20,4 +20,8 @@ const ProjectSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// The Projects page always queries/sorts by (user, updatedAt) — without
+// this index that query scans the whole projects collection.
+ProjectSchema.index({ user: 1, updatedAt: -1 });
+
 export default mongoose.models.Project || mongoose.model("Project", ProjectSchema);
