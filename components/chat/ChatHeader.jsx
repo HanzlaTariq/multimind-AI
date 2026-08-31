@@ -30,8 +30,7 @@ export default function ChatHeader({
         </span>
         <span className="font-display text-sm font-semibold text-paper">MultiMind</span>
       </span>
-      <div className="ml-auto flex items-center gap-2">
-        <button
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-y-1.5 gap-x-1.5 sm:gap-2">        <button
           onClick={onToggleTemporary}
           className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition ${
             temporaryMode
