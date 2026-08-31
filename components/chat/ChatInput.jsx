@@ -159,7 +159,7 @@ export default function ChatInput({
 
       <form
         onSubmit={handleSend}
-        className={`flex items-end gap-0.5 rounded-[1.75rem] border border-line bg-surface p-2 transition-all focus-within:border-mist/50 ${
+        className={`flex items-end gap-0.5 rounded-[1.4rem] border border-line bg-surface p-1.5 transition-all focus-within:border-mist/50 sm:rounded-[1.75rem] sm:p-2 ${
           isEmpty ? "shadow-2xl shadow-black/30" : "shadow-lg shadow-black/20"
         }`}
       >
@@ -175,7 +175,7 @@ export default function ChatInput({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={imageMode}
-          className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-mist transition hover:bg-surface2 hover:text-paper disabled:opacity-30"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-mist transition hover:bg-surface2 hover:text-paper disabled:opacity-30 sm:mb-1 sm:h-8 sm:w-8"
           title="Attach a code/text file"
           aria-label="Attach file"
         >
@@ -186,7 +186,7 @@ export default function ChatInput({
           type="button"
           onClick={() => setImageMode((v) => !v)}
           disabled={temporaryMode}
-          className={`mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition disabled:opacity-30 ${
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition disabled:opacity-30 sm:mb-1 sm:h-8 sm:w-8 ${
             imageMode ? "bg-signal/15 text-signal" : "text-mist hover:bg-surface2 hover:text-paper"
           }`}
           title={
@@ -205,7 +205,7 @@ export default function ChatInput({
           <button
             type="button"
             onClick={toggleListening}
-            className={`mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition sm:mb-1 sm:h-8 sm:w-8 ${
               listening
                 ? "animate-pulse bg-red-500/15 text-red-400"
                 : "text-mist hover:bg-surface2 hover:text-paper"
@@ -229,13 +229,13 @@ export default function ChatInput({
           }}
           rows={1}
           placeholder={imageMode ? "Describe an image to generate…" : "How can I help you today?"}
-          className="chat-input-textarea scrollbar-thin max-h-40 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-2.5 text-[15px] text-paper outline-none placeholder:text-mist/50"
+          className="chat-input-textarea scrollbar-thin max-h-40 min-w-0 flex-1 resize-none bg-transparent px-1.5 py-1.5 text-[14px] text-paper outline-none placeholder:text-mist/50 sm:py-2.5 sm:text-[15px]"
         />
         
         <button
           type="submit"
           disabled={pending || (!prompt.trim() && !attachment)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-paper text-ink transition-all hover:bg-signal active:scale-95 disabled:cursor-not-allowed disabled:bg-surface2 disabled:text-mist/40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink transition-all hover:bg-signal active:scale-95 disabled:cursor-not-allowed disabled:bg-surface2 disabled:text-mist/40 sm:h-10 sm:w-10"
           aria-label="Send"
         >
           <Send className="h-4 w-4" />
