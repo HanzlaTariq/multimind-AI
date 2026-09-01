@@ -19,6 +19,7 @@ import {
   Check,
   FolderKanban,
   FolderInput,
+  Workflow,
 } from "lucide-react";
 import SearchModal from "./SearchModal";
 
@@ -233,6 +234,16 @@ export default function Sidebar({
               <FolderKanban className="h-3.5 w-3.5" />
             </span>
             Projects
+          </Link>
+
+          <Link
+            href="/dashboard/flows"
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <Workflow className="h-3.5 w-3.5" />
+            </span>
+            Flows
           </Link>
 
           <Link
