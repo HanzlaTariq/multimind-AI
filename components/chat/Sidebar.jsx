@@ -20,6 +20,8 @@ import {
   FolderKanban,
   FolderInput,
   Workflow,
+  Inbox,
+  TrendingUp,
 } from "lucide-react";
 import SearchModal from "./SearchModal";
 
@@ -244,6 +246,26 @@ export default function Sidebar({
               <Workflow className="h-3.5 w-3.5" />
             </span>
             Flows
+          </Link>
+
+          <Link
+            href="/dashboard/inbox"
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <Inbox className="h-3.5 w-3.5" />
+            </span>
+            Inbox
+          </Link>
+
+          <Link
+            href="/dashboard/growth"
+            className="mb-1 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-mist transition hover:bg-surface hover:text-paper"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface2">
+              <TrendingUp className="h-3.5 w-3.5" />
+            </span>
+            Growth
           </Link>
 
           <Link
