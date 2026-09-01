@@ -2,19 +2,26 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, User as UserIcon, SlidersHorizontal, CreditCard } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowLeft, User as UserIcon, SlidersHorizontal, CreditCard, Link2 } from "lucide-react";
 import ProfileTab from "./ProfileTab";
 import PreferencesTab from "./PreferencesTab";
 import BillingTab from "./BillingTab";
+import ConnectionsTab from "./ConnectionsTab";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: UserIcon },
   { id: "preferences", label: "Preferences", icon: SlidersHorizontal },
+  { id: "connections", label: "Connections", icon: Link2 },
   { id: "billing", label: "Plan & Billing", icon: CreditCard },
 ];
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile");
+  const searchParams = useSearchParams();
+  const initialTab = TABS.some((t) => t.id === searchParams.get("tab"))
+    ? searchParams.get("tab")
+    : "profile";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   return (
     <div className="min-h-screen bg-ink">
@@ -46,6 +53,7 @@ export default function SettingsPage() {
         <div className="flex-1">
           {activeTab === "profile" && <ProfileTab />}
           {activeTab === "preferences" && <PreferencesTab />}
+          {activeTab === "connections" && <ConnectionsTab />}
           {activeTab === "billing" && <BillingTab />}
         </div>
       </div>

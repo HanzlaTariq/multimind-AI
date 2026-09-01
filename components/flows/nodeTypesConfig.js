@@ -160,7 +160,14 @@ export const NODE_TYPES = [
     label: "Instagram: Post",
     icon: "Instagram",
     description: "Publishes a post to Instagram",
-    configSchema: [{ key: "connectionId", label: "Account", type: "connection", platform: "instagram" }],
+    configSchema: [
+      { key: "connectionId", label: "Account", type: "connection", platform: "instagram" },
+      // Graph API has no text-only IG post — a public image URL is
+      // required. Falls back to an upstream node's output if this is left
+      // blank and that output already looks like an image URL.
+      { key: "imageUrl", label: "Image URL", type: "text", placeholder: "https://... (required by Instagram)" },
+      { key: "caption", label: "Caption (optional override)", type: "textarea", placeholder: "Leave blank to use the connected node's output" },
+    ],
   },
   {
     type: "platform.instagramStory",
@@ -192,7 +199,11 @@ export const NODE_TYPES = [
     label: "Facebook: Post",
     icon: "Facebook",
     description: "Publishes a post to Facebook",
-    configSchema: [{ key: "connectionId", label: "Account", type: "connection", platform: "facebook" }],
+    configSchema: [
+      { key: "connectionId", label: "Account", type: "connection", platform: "facebook" },
+      { key: "message", label: "Message (optional override)", type: "textarea", placeholder: "Leave blank to use the connected node's output" },
+      { key: "link", label: "Link (optional)", type: "text", placeholder: "https://..." },
+    ],
   },
   {
     type: "platform.facebookReply",
