@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Instagram, Facebook, MessageCircle, Music2, Unlink, Loader2 } from "lucide-react";
+import { Instagram, Facebook, MessageCircle, Music2, Chrome, Unlink, Loader2 } from "lucide-react";
 
 // One entry per platform Flows' node library knows how to act on
 // (components/flows/nodeTypesConfig.js). `connectHref` is null for
@@ -37,10 +37,17 @@ const PLATFORMS = [
     connectHref: null,
     note: "Coming soon.",
   },
+  {
+    id: "google",
+    label: "Google",
+    icon: Chrome,
+    connectHref: "/api/connections/google/authorize",
+    note: "Drive, Sheets & Gmail — powers the Invoice Parser Agent template.",
+  },
 ];
 
 const ERROR_MESSAGES = {
-  denied: "Connection cancelled — you didn't approve access on Meta's side.",
+  denied: "Connection cancelled — you didn't approve access on the other side.",
   state_mismatch: "That connect link expired or was invalid. Try again.",
   no_pages: "No Facebook Pages found on that account. You need to be an admin of at least one Page.",
   unknown: "Something went wrong connecting that account. Try again in a bit.",

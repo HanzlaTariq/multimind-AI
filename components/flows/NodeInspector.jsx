@@ -1,7 +1,7 @@
 "use client";
 
 import { X, Trash2 } from "lucide-react";
-import { getNodeTypeDef, fieldIsVisible } from "./nodeTypesConfig";
+import { getNodeTypeDef, fieldIsVisible, NODE_CATEGORIES } from "./nodeTypesConfig";
 import { getNodeIcon } from "./nodeIcons";
 import { accentClasses } from "./accentClasses";
 import ConfigField from "./ConfigField";
@@ -10,9 +10,7 @@ export default function NodeInspector({ node, onChange, onDelete, onClose }) {
   if (!node) return null;
   const def = getNodeTypeDef(node.data.nodeType);
   const Icon = getNodeIcon(def?.icon);
-  const accentKey =
-    def?.category === "trigger" ? "amber" : def?.category === "ai" ? "violet" : def?.category === "platform" ? "sky" : "emerald";
-  const accent = accentClasses(accentKey);
+  const accent = accentClasses(NODE_CATEGORIES[def?.category]?.accent);
   const config = node.data.config || {};
   const schema = def?.configSchema || [];
 
@@ -58,6 +56,7 @@ export default function NodeInspector({ node, onChange, onDelete, onClose }) {
               value={config[field.key]}
               onChange={(value) => handleConfigChange(field.key, value)}
             />
+            {field.helpText && <p className="mt-1 text-[11px] text-mist/60">{field.helpText}</p>}
           </div>
         ))}
 

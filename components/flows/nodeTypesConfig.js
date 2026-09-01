@@ -19,6 +19,14 @@ export const NODE_CATEGORIES = {
   ai: { label: "AI Content", accent: "violet" },
   platform: { label: "Platform Actions", accent: "sky" },
   logic: { label: "Logic", accent: "emerald" },
+  // Google Workspace-powered nodes (Invoice Parser Agent template): a
+  // Drive file trigger, document/OCR text extraction, and actions that
+  // write to Sheets or send through Gmail. Kept as its own category
+  // rather than folded into "platform" since these aren't social
+  // accounts and don't share that category's connection semantics
+  // (a Google connection covers Drive+Sheets+Gmail together, not one
+  // account per service).
+  google: { label: "Google Workspace", accent: "emerald" },
 };
 
 export const NODE_TYPES = [
@@ -94,6 +102,24 @@ export const NODE_TYPES = [
           { value: "dm", label: "New direct message" },
           { value: "comment", label: "New comment" },
         ],
+      },
+    ],
+  },
+
+  {
+    type: "trigger.driveNewFile",
+    category: "trigger",
+    label: "New File in Drive Folder",
+    icon: "FolderSearch",
+    description: "Starts the flow when a new file lands in a Google Drive folder",
+    configSchema: [
+      { key: "connectionId", label: "Google account", type: "connection", platform: "google" },
+      {
+        key: "folderId",
+        label: "Folder ID",
+        type: "text",
+        placeholder: "e.g. 1A2b3C4d5E6f... (from the folder's Drive URL)",
+        helpText: "Open the folder in Drive and copy the id from the end of its URL.",
       },
     ],
   },
@@ -292,6 +318,63 @@ export const NODE_TYPES = [
       { key: "overField", label: "Repeat over", type: "text", placeholder: "e.g. connected accounts" },
     ],
   },
+
+  // --- Google Workspace ------------------------------------------------
+  // Invoice Parser Agent template chain: trigger.driveNewFile (above, in
+  // Triggers) -> extractDocument -> extractStructuredData -> appendToSheet
+  // -> sendEmail. See lib/flowNodes/registry.js for what each one does.
+  {
+    type: "action.extractDocument",
+    category: "google",
+    label: "Extract Document Text",
+    icon: "FileText",
+    description: "Reads the full text out of the file from the previous step, OCR'ing scans/PDFs automatically",
+    configSchema: [],
+  },
+  {
+    type: "ai.extractStructuredData",
+    category: "google",
+    label: "AI: Extract Structured Data",
+    icon: "Brain",
+    description: "Turns extracted text into a JSON array of rows using AI",
+    configSchema: [
+      {
+        key: "extractionPrompt",
+        label: "Extraction prompt",
+        type: "textarea",
+        placeholder: "Describe what to pull out and how to shape it as JSON",
+        helpText: "Pre-filled with a generic prompt — edit it if you know the document type in advance (e.g. always invoices).",
+      },
+    ],
+  },
+  {
+    type: "action.appendToSheet",
+    category: "google",
+    label: "Append to Google Sheet",
+    icon: "Table",
+    description: "Adds each extracted row as a new row in a Google Sheet",
+    configSchema: [
+      { key: "connectionId", label: "Google account", type: "connection", platform: "google" },
+      { key: "spreadsheetId", label: "Spreadsheet ID", type: "text", placeholder: "From the sheet's URL: /d/<this part>/edit" },
+      { key: "sheetName", label: "Sheet (tab) name", type: "text", placeholder: "e.g. Sheet1", default: "Sheet1" },
+    ],
+  },
+  {
+    type: "action.sendEmail",
+    category: "google",
+    label: "Send Summary Email",
+    icon: "Mail",
+    description: "Emails a summary of what was extracted, with links to the file and sheet",
+    configSchema: [
+      { key: "connectionId", label: "Gmail account", type: "connection", platform: "google" },
+      {
+        key: "toEmail",
+        label: "Send to (optional)",
+        type: "text",
+        placeholder: "Leave blank to send to your own account email",
+      },
+    ],
+  },
 ];
 
 export function getNodeTypeDef(type) {
@@ -321,6 +404,15 @@ export function getNodeSummary(nodeType, config = {}) {
   }
   if (nodeType === "logic.condition" && config.field) {
     return `${config.field} ${config.operator || "contains"} ${config.value || ""}`.trim();
+  }
+  if (nodeType === "trigger.driveNewFile" && config.folderId) {
+    return `Watches Drive folder ${config.folderId}`;
+  }
+  if (nodeType === "action.appendToSheet" && config.spreadsheetId) {
+    return `Appends to ${config.sheetName || "Sheet1"} in ${config.spreadsheetId}`;
+  }
+  if (nodeType === "action.sendEmail") {
+    return config.toEmail ? `Sends a summary to ${config.toEmail}` : "Sends a summary to your account email";
   }
   return def.description;
 }

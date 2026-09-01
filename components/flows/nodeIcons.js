@@ -15,6 +15,11 @@ import {
   GitBranch,
   Timer,
   Repeat,
+  FolderSearch,
+  FileText,
+  Brain,
+  Table,
+  Mail,
 } from "lucide-react";
 
 const ICONS = {
@@ -34,6 +39,11 @@ const ICONS = {
   GitBranch,
   Timer,
   Repeat,
+  FolderSearch,
+  FileText,
+  Brain,
+  Table,
+  Mail,
 };
 
 export function getNodeIcon(name) {

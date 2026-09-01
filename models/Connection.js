@@ -10,7 +10,7 @@ const ConnectionSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     platform: {
       type: String,
-      enum: ["instagram", "facebook", "whatsapp", "tiktok", "twitter"],
+      enum: ["instagram", "facebook", "whatsapp", "tiktok", "twitter", "google"],
       required: true,
     },
     accountId: { type: String, required: true }, // platform's own id for this account
@@ -48,6 +48,23 @@ ConnectionSchema.pre("save", function encryptTokensBeforeSave(next) {
   if (this.isModified("refreshToken")) {
     this.refreshToken = encryptText(this.refreshToken);
   }
+  next();
+});
+
+// The OAuth callback routes (meta/callback, google/callback) save tokens
+// via findOneAndUpdate/upsert rather than loading-then-.save()-ing a
+// document, since there's no existing document to load on first
+// connect. Mongoose's `pre("save")` hook above only fires on real
+// document saves, not on findOneAndUpdate queries — so without this
+// second hook, tokens written through that path were being stored in
+// plaintext despite the schema's intent. encryptText() is idempotent, so
+// this is safe to add even though the callers already pass plaintext
+// in (nothing double-encrypts).
+ConnectionSchema.pre("findOneAndUpdate", function encryptTokensBeforeUpdate(next) {
+  const update = this.getUpdate() || {};
+  const target = update.$set || update; // callers may pass either shape
+  if (target.accessToken) target.accessToken = encryptText(target.accessToken);
+  if (target.refreshToken) target.refreshToken = encryptText(target.refreshToken);
   next();
 });
 

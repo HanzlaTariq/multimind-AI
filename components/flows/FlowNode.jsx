@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Handle, Position } from "reactflow";
-import { getNodeTypeDef, getNodeSummary } from "./nodeTypesConfig";
+import { getNodeTypeDef, getNodeSummary, NODE_CATEGORIES } from "./nodeTypesConfig";
 import { getNodeIcon } from "./nodeIcons";
 import { accentClasses } from "./accentClasses";
 
@@ -14,7 +14,7 @@ function FlowNode({ data, selected }) {
     description: "",
   };
   const Icon = getNodeIcon(def.icon);
-  const accent = accentClasses(def.category === "trigger" ? "amber" : def.category === "ai" ? "violet" : def.category === "platform" ? "sky" : "emerald");
+  const accent = accentClasses(NODE_CATEGORIES[def.category]?.accent);
   const isTrigger = def.category === "trigger";
 
   return (

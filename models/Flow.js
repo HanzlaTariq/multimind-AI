@@ -49,6 +49,21 @@ const FlowSchema = new mongoose.Schema(
     // sweep (Phase 5) can query "which active flows are due" without
     // parsing every node's data blob on every tick.
     nextRunAt: { type: Date, default: null },
+
+    // Bookkeeping for the trigger.driveNewFile node (Invoice Parser Agent
+    // template and any other Drive-triggered flow). Vercel is serverless,
+    // so there's no long-lived process to hold a Drive `watch()` channel
+    // open — instead a cron route polls `files.list` on the configured
+    // folder every few minutes (see app/api/cron/drive-poll/route.js).
+    // processedFileIds remembers which Drive file ids already kicked off
+    // a run for THIS flow, so re-polling the same folder never processes
+    // a file twice. Capped at the last 500 ids (see the cron route) since
+    // this only needs to answer "have we seen this id before", not be a
+    // full audit log — FlowRun already keeps the real history.
+    driveSync: {
+      processedFileIds: { type: [String], default: undefined },
+      lastPolledAt: { type: Date, default: null },
+    },
   },
   { timestamps: true },
 );
