@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -11,12 +12,19 @@ function getRedirectUri(req) {
   return `${origin}/api/connections/meta/callback`;
 }
 
+// Builds the redirect back to the settings page AND clears the one-time
+// OAuth state cookie in a single response. Uses NextResponse (not the
+// bare Web Response.redirect) because Response.redirect() returns a
+// response whose headers are locked/immutable — trying to add a
+// Set-Cookie header onto it throws "TypeError: immutable" at runtime.
 function settingsRedirect(req, params) {
   const origin = req.headers.get("origin") || process.env.NEXTAUTH_URL;
   const url = new URL("/dashboard/settings", origin);
   url.searchParams.set("tab", "connections");
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return Response.redirect(url.toString());
+  const res = NextResponse.redirect(url.toString());
+  res.cookies.set("meta_oauth_state", "", { path: "/", maxAge: 0 });
+  return res;
 }
 
 function readCookie(req, name) {
@@ -38,18 +46,13 @@ export async function GET(req) {
 
   const expectedState = readCookie(req, "meta_oauth_state");
 
-  // Clear the state cookie regardless of outcome — it's single-use.
-  const clearCookie = `meta_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
-
   if (metaError) {
     const res = settingsRedirect(req, { connect_error: "denied" });
-    res.headers.append("Set-Cookie", clearCookie);
     return res;
   }
 
   if (!code || !state || !expectedState || state !== expectedState) {
     const res = settingsRedirect(req, { connect_error: "state_mismatch" });
-    res.headers.append("Set-Cookie", clearCookie);
     return res;
   }
 
@@ -96,7 +99,6 @@ export async function GET(req) {
 
     if (pages.length === 0) {
       const res = settingsRedirect(req, { connect_error: "no_pages" });
-      res.headers.append("Set-Cookie", clearCookie);
       return res;
     }
 
@@ -151,11 +153,9 @@ export async function GET(req) {
       fb: String(facebookCount),
       ig: String(instagramCount),
     });
-    res.headers.append("Set-Cookie", clearCookie);
     return res;
   } catch (err) {
     const res = settingsRedirect(req, { connect_error: "unknown" });
-    res.headers.append("Set-Cookie", clearCookie);
     console.error("Meta OAuth callback failed:", err.message);
     return res;
   }
