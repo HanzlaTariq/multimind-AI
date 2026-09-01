@@ -13,6 +13,8 @@ import {
   Trash2,
 } from "lucide-react";
 import DeleteModal from "@/components/chat/DeleteModal";
+import TemplatePicker from "@/components/flows/TemplatePicker";
+import { getFlowTemplate } from "@/lib/flowTemplates";
 
 const STATUS_STYLES = {
   draft: "text-mist bg-surface2",
@@ -24,7 +26,9 @@ export default function FlowsPage() {
   const router = useRouter();
   const [flows, setFlows] = useState(null);
   const [error, setError] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [templateId, setTemplateId] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +64,15 @@ export default function FlowsPage() {
     }
   }
 
+  function handlePickTemplate(id) {
+    setTemplateId(id);
+    const template = id ? getFlowTemplate(id) : null;
+    setName(template?.flowName || "");
+    setDescription(template?.flowDescription || "");
+    setPickerOpen(false);
+    setCreating(true);
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
     if (!name.trim() || submitting) return;
@@ -69,7 +82,7 @@ export default function FlowsPage() {
       const res = await fetch("/api/flows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description }),
+        body: JSON.stringify({ name, description, templateId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -104,7 +117,7 @@ export default function FlowsPage() {
             </p>
           </div>
           <button
-            onClick={() => setCreating(true)}
+            onClick={() => setPickerOpen(true)}
             className="flex shrink-0 items-center gap-1.5 rounded-lg bg-signal px-3.5 py-2.5 text-sm font-semibold text-ink transition hover:opacity-90"
           >
             <Plus className="h-4 w-4" />
@@ -120,16 +133,27 @@ export default function FlowsPage() {
             className="space-y-3 rounded-2xl border border-signal/40 bg-surface p-5"
           >
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-sm font-semibold text-paper">New flow</h2>
+              <h2 className="font-display text-sm font-semibold text-paper">
+                {templateId ? `New flow — ${getFlowTemplate(templateId)?.name}` : "New flow"}
+              </h2>
               <button
                 type="button"
-                onClick={() => setCreating(false)}
+                onClick={() => {
+                  setCreating(false);
+                  setTemplateId(null);
+                }}
                 className="text-mist transition hover:text-paper"
                 aria-label="Cancel"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
+            {templateId && (
+              <p className="-mt-1 text-xs text-mist/70">
+                Pre-filled with the {getFlowTemplate(templateId)?.name} template — you can rename it
+                and adjust the nodes once you're on the canvas.
+              </p>
+            )}
             <div>
               <label className="mb-1 block text-xs text-mist">Flow name</label>
               <input
@@ -155,7 +179,10 @@ export default function FlowsPage() {
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setCreating(false)}
+                onClick={() => {
+                  setCreating(false);
+                  setTemplateId(null);
+                }}
                 className="rounded-lg px-3.5 py-2 text-sm text-mist transition hover:bg-surface2 hover:text-paper"
               >
                 Cancel
@@ -181,9 +208,16 @@ export default function FlowsPage() {
         {flows && flows.length === 0 && !creating && (
           <div className="rounded-2xl border border-dashed border-line p-8 text-center">
             <Workflow className="mx-auto mb-3 h-8 w-8 text-mist/50" />
-            <p className="text-sm text-mist">
-              No flows yet. Create one to automate posting and replies across your accounts.
+            <p className="mb-4 text-sm text-mist">
+              No flows yet. Start from a template, or build one from scratch.
             </p>
+            <button
+              onClick={() => setPickerOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-signal px-3.5 py-2 text-sm font-semibold text-ink transition hover:opacity-90"
+            >
+              <Plus className="h-4 w-4" />
+              New flow
+            </button>
           </div>
         )}
 
@@ -229,6 +263,12 @@ export default function FlowsPage() {
             ))}
           </div>
         )}
+
+        <TemplatePicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onPick={handlePickTemplate}
+        />
 
         <DeleteModal
           open={!!deleteTarget}

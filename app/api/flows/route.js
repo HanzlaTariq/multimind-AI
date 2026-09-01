@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Flow from "@/models/Flow";
+import { getFlowTemplate, buildFlowFromTemplate } from "@/lib/flowTemplates";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -37,20 +38,39 @@ export async function POST(req) {
     return Response.json({ error: "You must be signed in" }, { status: 401 });
   }
 
-  const { name, description } = await req.json();
+  const { name, description, templateId } = await req.json();
 
-  if (!name || !name.trim()) {
+  // Phase 8: "New flow" can either start blank or 1-click duplicate one of
+  // the built-in templates (lib/flowTemplates.js). Name/description are
+  // still optional overrides on top of the template's defaults.
+  let template = null;
+  if (templateId) {
+    template = getFlowTemplate(templateId);
+    if (!template) {
+      return Response.json({ error: "Unknown template" }, { status: 400 });
+    }
+  }
+
+  const finalName = (name && name.trim()) || template?.flowName;
+  if (!finalName) {
     return Response.json({ error: "Flow name is required" }, { status: 400 });
   }
 
+  const finalDescription =
+    typeof description === "string" && description.trim()
+      ? description
+      : template?.flowDescription || "";
+
   await dbConnect();
+
+  const graph = template ? buildFlowFromTemplate(template) : { nodes: [], edges: [] };
 
   const flow = await Flow.create({
     user: session.user.id,
-    name: name.trim().slice(0, 80),
-    description: (description || "").slice(0, 500),
-    nodes: [],
-    edges: [],
+    name: finalName.trim().slice(0, 80),
+    description: finalDescription.slice(0, 500),
+    nodes: graph.nodes,
+    edges: graph.edges,
   });
 
   return Response.json({ flow });

@@ -26,6 +26,7 @@ import FlowNode from "@/components/flows/FlowNode";
 import AnimatedEdge from "@/components/flows/AnimatedEdge";
 import NodePalette from "@/components/flows/NodePalette";
 import NodeInspector from "@/components/flows/NodeInspector";
+import OnboardingHint from "@/components/flows/OnboardingHint";
 import DeleteModal from "@/components/chat/DeleteModal";
 
 const nodeTypes = { flowNode: FlowNode };
@@ -379,6 +380,8 @@ function FlowCanvas() {
               </p>
             </div>
           )}
+
+          <OnboardingHint hasNodes={nodes.length > 0} />
         </div>
 
         {selectedNode && (
