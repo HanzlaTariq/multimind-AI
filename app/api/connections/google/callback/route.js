@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
@@ -16,7 +17,17 @@ function settingsRedirect(req, params) {
   const url = new URL("/dashboard/settings", origin);
   url.searchParams.set("tab", "connections");
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  return Response.redirect(url.toString());
+  return NextResponse.redirect(url.toString());
+}
+
+function clearStateCookie(res) {
+  res.cookies.set("google_oauth_state", "", {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 0,
+  });
+  return res;
 }
 
 function readCookie(req, name) {
@@ -37,18 +48,13 @@ export async function GET(req) {
   const googleError = url.searchParams.get("error");
 
   const expectedState = readCookie(req, "google_oauth_state");
-  const clearCookie = `google_oauth_state=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 
   if (googleError) {
-    const res = settingsRedirect(req, { connect_error: "denied" });
-    res.headers.append("Set-Cookie", clearCookie);
-    return res;
+    return clearStateCookie(settingsRedirect(req, { connect_error: "denied" }));
   }
 
   if (!code || !state || !expectedState || state !== expectedState) {
-    const res = settingsRedirect(req, { connect_error: "state_mismatch" });
-    res.headers.append("Set-Cookie", clearCookie);
-    return res;
+    return clearStateCookie(settingsRedirect(req, { connect_error: "state_mismatch" }));
   }
 
   try {
@@ -108,13 +114,9 @@ export async function GET(req) {
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    const res = settingsRedirect(req, { connected: "1", google: "1" });
-    res.headers.append("Set-Cookie", clearCookie);
-    return res;
+    return clearStateCookie(settingsRedirect(req, { connected: "1", google: "1" }));
   } catch (err) {
-    const res = settingsRedirect(req, { connect_error: "unknown" });
-    res.headers.append("Set-Cookie", clearCookie);
     console.error("Google OAuth callback failed:", err.message);
-    return res;
+    return clearStateCookie(settingsRedirect(req, { connect_error: "unknown" }));
   }
 }

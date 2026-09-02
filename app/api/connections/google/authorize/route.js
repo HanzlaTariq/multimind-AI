@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -52,12 +53,13 @@ export async function GET(req) {
   dialogUrl.searchParams.set("prompt", "consent");
   dialogUrl.searchParams.set("include_granted_scopes", "true");
 
-  const res = Response.redirect(dialogUrl.toString());
-  res.headers.append(
-    "Set-Cookie",
-    `google_oauth_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600${
-      process.env.NODE_ENV === "production" ? "; Secure" : ""
-    }`,
-  );
+  const res = NextResponse.redirect(dialogUrl.toString());
+  res.cookies.set("google_oauth_state", state, {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+    maxAge: 600,
+    secure: process.env.NODE_ENV === "production",
+  });
   return res;
 }
