@@ -14,6 +14,7 @@ import {
   Share2,
 } from "lucide-react";
 import { exportTextToPdf } from "@/lib/pdfExport";
+import { formatMarkdownForCopy } from "@/lib/formatForCopy";
 
 const MODEL_LABEL = {
   gemini: "Gemini",
@@ -36,7 +37,7 @@ export default function ActionButtons({
   async function handleCopy() {
     if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(formatMarkdownForCopy(text));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (e) {
