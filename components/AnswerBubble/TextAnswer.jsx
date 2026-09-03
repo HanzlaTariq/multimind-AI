@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Pin, PinOff } from "lucide-react";
 import ModelDropdown from "./ModelDropdown";
 import CodeBlock from "./CodeBlock";
@@ -96,7 +97,7 @@ export default function TextAnswer({
             isDarkTheme ? "prose-invert" : ""
           } ${fontClass} ${isError ? "text-red-300" : "text-paper/90"}`}
         >
-          <ReactMarkdown components={{ code: CodeBlock }}>{shownText}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock }}>{shownText}</ReactMarkdown>
           {stillTyping && <span className="animate-blink text-signal">▍</span>}
         </div>
       </div>

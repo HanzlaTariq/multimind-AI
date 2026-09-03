@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Sparkles, Copy, Check, ArrowRight } from "lucide-react";
 import MermaidDiagram from "@/components/MermaidDiagram";
 
@@ -103,7 +104,7 @@ export default function SharedConversationView({ conversation }) {
                     </div>
                   ) : (
                     <div className="prose prose-sm prose-invert max-w-none text-[13.5px] leading-relaxed text-paper/90 prose-p:my-2 prose-pre:m-0 prose-pre:bg-transparent prose-pre:p-0 prose-code:text-signal prose-code:before:content-none prose-code:after:content-none">
-                      <ReactMarkdown components={{ code: CodeBlock }}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock }}>
                         {turn.best?.text || ""}
                       </ReactMarkdown>
                     </div>
