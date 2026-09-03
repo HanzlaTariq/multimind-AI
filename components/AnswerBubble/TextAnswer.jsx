@@ -66,7 +66,7 @@ export default function TextAnswer({
   const stillTyping = isViewingBest && visibleChars < activeResponse.text.length;
 
   return (
-    <div className="group max-w-2xl">
+    <div className="group min-w-0 max-w-2xl">
       {hasAlternatives && (
         <div className="mb-1.5">
           <ModelDropdown
@@ -97,7 +97,27 @@ export default function TextAnswer({
             isDarkTheme ? "prose-invert" : ""
           } ${fontClass} ${isError ? "text-red-300" : "text-paper/90"}`}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ code: CodeBlock }}>{shownText}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code: CodeBlock,
+              table: ({ children }) => (
+                <div className="my-2 -mx-4 overflow-x-auto px-4">
+                  <table className="w-full min-w-[480px] border-collapse text-left">{children}</table>
+                </div>
+              ),
+              th: ({ children }) => (
+                <th className="whitespace-nowrap border-b border-line px-2 py-1.5 font-semibold">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className="border-b border-line/50 px-2 py-1.5 align-top">{children}</td>
+              ),
+            }}
+          >
+            {shownText}
+          </ReactMarkdown>
           {stillTyping && <span className="animate-blink text-signal">▍</span>}
         </div>
       </div>
