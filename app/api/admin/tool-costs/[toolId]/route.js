@@ -1,3 +1,5 @@
+import { assertSameOrigin,readJSON } from "@/lib/flowPro/server";
+import { CREDIT_PREFIX,MAX_NODE_COST } from "@/lib/automationCredits/pricing.mjs";
 import dbConnect from "@/lib/mongodb";
 import ToolCreditConfig from "@/models/ToolCreditConfig";
 import Notification from "@/models/Notification";
@@ -19,12 +21,17 @@ export async function PATCH(req, { params }) {
 
   await dbConnect();
 
-  const body = await req.json();
+  let body;
+  try { assertSameOrigin(req); body=await readJSON(req); }
+  catch(e) { return Response.json({error:e.message},{status:e.status||400}); }
 
-  if (typeof body.cost !== "number" || body.cost < 0) {
+  if (typeof body.cost !== "number" || !Number.isFinite(body.cost) || body.cost < 0) {
     return Response.json({ error: "Cost must be a non-negative number" }, { status: 400 });
   }
 
+  if(params.toolId.startsWith(CREDIT_PREFIX)&&(!Number.isSafeInteger(body.cost)||body.cost>MAX_NODE_COST))return Response.json({error:`Node cost must be a whole number from 0 to ${MAX_NODE_COST}.`},{status:400});
+  if(body.effectiveAt&&Number.isNaN(new Date(body.effectiveAt).getTime()))return Response.json({error:"Choose a valid effective date"},{status:400});
+  if(body.minCost!==undefined&&(!Number.isFinite(body.minCost)||body.minCost<0))return Response.json({error:"Invalid minimum cost"},{status:400});
   const tool = await ToolCreditConfig.findOne({ toolId: params.toolId });
   if (!tool) {
     return Response.json({ error: "Tool not found" }, { status: 404 });

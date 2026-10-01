@@ -1,0 +1,37 @@
+/** Actual workflow engine + actual wallet logic; storage is the deterministic test adapter. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { executeWorkflow } from '../../lib/flowPro/engine.mjs';
+import { NODE_TYPES } from '../../components/flows/nodeTypesConfig.js';
+import { CREDIT_PREFIX,DEFAULT_POLICY,flowQuote } from '../../lib/automationCredits/pricing.mjs';
+import { walletFixture } from './fake-mongo.mjs';
+const costs=Object.fromEntries(NODE_TYPES.map(n=>[CREDIT_PREFIX+n.type,{cost:1}]));
+const N=(nodeId,type='utility.log',config={},settings={},extra={})=>({nodeId,type,position:{x:0,y:0},data:{config,settings,...extra}});
+const E=(source,target,sourceHandle)=>({edgeId:`${source}_${target}_${sourceHandle||'out'}`,source,target,sourceHandle});
+async function billed(nodes,edges,{policy=DEFAULT_POLICY,mode='live',balance=100,...options}={}){
+ const f=walletFixture(balance),graph={nodes,edges},quote=flowQuote(graph,costs,policy,{mode,untilNodeId:options.untilNodeId,seedIds:Object.keys(options.seedOutputs||{})});
+ const meter=await f.wallet.beginMeter('user-1',quote,{key:'execution',scope:'flow',label:'Integration test'});
+ const nodePrices={};
+ const result=await executeWorkflow(graph,{definitions:NODE_TYPES,mode,...options,beforeNode:async node=>{await options.beforeNode?.(node);await meter.start(node.nodeId);},onLog:async log=>{
+  if(quote.lines.some(l=>l.nodeId===log.nodeId)&&log.status!=='skipped'&&!log.billingBlocked)nodePrices[log.nodeId]=await meter.finish(log.nodeId,log.billingUncertain?'uncertain':log.status==='failed'?'failed':'success');
+  await options.onLog?.(log);
+ }});
+ const receipt=await meter.close(result.status);
+ return {result,receipt,quote,nodePrices,user:f.user()};
+}
+test('live linear flow charges exactly one per successful node',async()=>{const r=await billed([N('a','trigger.manual'),N('b'),N('c')],[E('a','b'),E('b','c')]);assert.equal(r.receipt.charged,3);assert.equal(r.user.credits,97);assert.deepEqual(r.nodePrices,{a:1,b:1,c:1});});
+test('branch reservation returns skipped branch price',async()=>{const r=await billed([N('a','trigger.manual'),N('b','logic.condition',{field:'score',operator:'gt',value:50}),N('yes'),N('no')],[E('a','b'),E('b','yes','true'),E('b','no','false')],{input:{score:90}});assert.equal(r.quote.total,4);assert.equal(r.receipt.charged,3);assert.equal(r.receipt.refunded,1);assert(!r.receipt.units.some(u=>u.key==='no'));});
+test('confirmed failure and downstream skip are refunded',async()=>{const r=await billed([N('a','trigger.manual'),N('b','logic.stop',{message:'Invalid input'}),N('c')],[E('a','b'),E('b','c')]);assert.equal(r.result.status,'failed');assert.equal(r.receipt.charged,1);assert.equal(r.receipt.refunded,2);});
+test('error-handler node is charged while confirmed failure is refunded',async()=>{const r=await billed([N('a','trigger.manual'),N('b','logic.stop',{message:'Failure'},{onError:'branch'}),N('c')],[E('a','b'),E('b','c','error')]);assert.equal(r.result.status,'completed_with_errors');assert.equal(r.receipt.charged,2);assert.equal(r.receipt.refunded,1);});
+test('retries only start and charge the logical node once',async()=>{let calls=0;const r=await billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'},{retries:2,retryDelayMs:1})],[E('a','b')],{externalExecutor:async()=>{calls++;return calls<3?{error:'Temporary rejection'}:{output:'ok'};}});assert.equal(calls,3);assert.equal(r.receipt.units.length,2);assert.equal(r.receipt.charged,2);});
+test('per-item processing is one node charge, not one charge per row',async()=>{const r=await billed([N('a','trigger.manual'),N('b','data.set',{fields:'{"x":"{{ $json.x }}"}',keepInput:'no'},{executionMode:'each'})],[E('a','b')],{input:[{x:1},{x:2},{x:3}]});assert.equal(r.result.outputs.b.length,3);assert.equal(r.receipt.charged,2);});
+test('cancel before starting returns the complete reservation',async()=>{const r=await billed([N('a','trigger.manual'),N('b')],[E('a','b')],{shouldCancel:async()=>true});assert.equal(r.result.status,'cancelled');assert.equal(r.receipt.charged,0);assert.equal(r.user.credits,100);});
+test('test workflow can run on zero balance without provider access',async()=>{let calls=0;const r=await billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'})],[E('a','b')],{mode:'test',balance:0,externalExecutor:()=>{calls++;return {output:'never'};}});assert.equal(calls,0);assert.equal(r.receipt.charged,0);assert.equal(r.user.credits,0);});
+test('admin paid-test policy excludes pinned data and external mock steps',async()=>{const r=await billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'}),N('c','utility.log',{}, {},{pinned:true,pinnedData:{ok:true}}),N('d')],[E('a','b'),E('b','c'),E('c','d')],{mode:'test',policy:{...DEFAULT_POLICY,chargeTests:true}});assert.equal(r.receipt.charged,2);assert.deepEqual(r.receipt.units.map(u=>u.key),['a','d']);});
+test('disabled, note and disconnected nodes do not charge',async()=>{const r=await billed([N('a','trigger.manual'),N('b','logic.stop',{}, {},{disabled:true}),N('c'),N('note','utility.note'),N('orphan')],[E('a','b'),E('b','c')]);assert.equal(r.receipt.charged,2);assert.equal(r.quote.total,2);});
+test('step-until reserves and charges only the selected path ancestors',async()=>{const r=await billed([N('a','trigger.manual'),N('b'),N('c')],[E('a','b'),E('b','c')],{untilNodeId:'b'});assert.equal(r.receipt.charged,2);assert.deepEqual(r.result.logs.map(l=>l.nodeId),['a','b']);});
+test('seeded webhook uses only its trigger branch',async()=>{const r=await billed([N('a','trigger.manual'),N('b','trigger.webhook'),N('x'),N('y')],[E('a','x'),E('b','y')],{seedOutputs:{b:{hello:'world'}}});assert.equal(r.receipt.charged,2);assert.deepEqual(r.receipt.units.map(u=>u.key),['b','y']);});
+test('insufficient funds prevent any external request',async()=>{let calls=0;await assert.rejects(billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'})],[E('a','b')],{balance:1,externalExecutor:()=>{calls++;}}),e=>e.status===402);assert.equal(calls,0);});
+test('timed-out external call is uncertain and is not retried',async()=>{let calls=0;const r=await billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'},{timeoutMs:5,retries:3})],[E('a','b')],{externalExecutor:async()=>{calls++;return new Promise(()=>{});}});assert.equal(calls,1);assert.equal(r.receipt.charged,2);assert.equal(r.receipt.uncertain,true);});
+test('billing authorization failure prevents external execution',async()=>{let calls=0;const r=await billed([N('a','trigger.manual'),N('b','action.http',{url:'https://example.com'})],[E('a','b')],{beforeNode:async n=>{if(n.nodeId==='b')throw new Error('Reservation blocked');},externalExecutor:()=>{calls++;}});assert.equal(calls,0);assert.equal(r.receipt.charged,1);assert.equal(r.receipt.refunded,1);assert.equal(r.result.logs[1].billingBlocked,true);});
+test('parallel layer fully drains before a persistence error can settle the run',async()=>{let secondDone=false;const graph={nodes:[N('a','trigger.manual'),N('b'),N('c','action.http',{url:'https://example.com'})],edges:[E('a','b'),E('a','c')]};await assert.rejects(executeWorkflow(graph,{mode:'live',definitions:NODE_TYPES,onLog:async log=>{if(log.nodeId==='b')throw new Error('Storage unavailable');},externalExecutor:async()=>{await new Promise(r=>setTimeout(r,15));secondDone=true;return {output:'sent'};}}),/Storage unavailable/);assert.equal(secondDone,true);});

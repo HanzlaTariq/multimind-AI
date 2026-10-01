@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Loader2, Save, CalendarClock, Zap } from "lucide-react";
+import AutomationCreditsAdmin from "@/components/admin/AutomationCreditsAdmin";
 
 function todayLocalDate() {
   const d = new Date();
@@ -16,6 +17,8 @@ function ToolRow({ tool, onSave }) {
   const [effectiveDate, setEffectiveDate] = useState(todayLocalDate());
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [rowError,setRowError] = useState("");
+  useEffect(()=>{setCost(tool.cost);setMinCost(tool.minCost||0);setDirty(false);},[tool.cost,tool.minCost,tool.updatedAt]);
 
   const isPerLength = tool.costType === "per-length";
 
@@ -26,6 +29,7 @@ function ToolRow({ tool, onSave }) {
 
   const save = async () => {
     setSaving(true);
+    setRowError("");
     try {
       await onSave(tool.toolId, {
         cost: Number(cost),
@@ -33,7 +37,7 @@ function ToolRow({ tool, onSave }) {
         effectiveAt: scheduleMode ? new Date(`${effectiveDate}T00:00:00`).toISOString() : null,
       });
       setDirty(false);
-    } finally {
+    } catch(e) { setRowError(e.message); } finally {
       setSaving(false);
     }
   };
@@ -59,6 +63,7 @@ function ToolRow({ tool, onSave }) {
         )}
       </div>
 
+      {rowError&&<p role="alert" className="mb-3 text-xs text-red-400">{rowError}</p>}
       {hasSchedule && (
         <p className="mb-3 flex items-center gap-1.5 rounded-lg border border-signal/30 bg-signal/10 px-3 py-2 text-[11px] text-signal">
           <CalendarClock className="h-3.5 w-3.5 shrink-0" />
@@ -136,6 +141,7 @@ function ToolRow({ tool, onSave }) {
 
 export default function AdminToolCostsPage() {
   const [tools, setTools] = useState([]);
+  const [view,setView]=useState("automation"),[query,setQuery]=useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -174,11 +180,15 @@ export default function AdminToolCostsPage() {
       <div>
         <h1 className="font-display text-xl font-semibold text-paper sm:text-2xl">Tool Costs</h1>
         <p className="mt-1 text-sm text-mist">
-          Set how many credits each document/PDF/TTS tool charges per use. Apply a change right
+          Set workflow nodes, ready-made tool steps and document/PDF/TTS prices. Apply a change right
           away, or schedule it for a future date — either way, users are notified.
         </p>
       </div>
 
+      <div className="flex flex-wrap gap-2">{[["automation","Workflows & ready tools"],["documents","Document tools"]].map(([id,label])=><button key={id} className={`rounded-lg border border-line px-4 py-2 text-sm ${view===id?'bg-signal text-ink':'bg-surface text-mist'}`} onClick={()=>{setView(id);setQuery("");}}>{label}</button>)}</div>
+      {view==="automation"&&<AutomationCreditsAdmin onChanged={load}/>}
+      <input className="w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm text-paper" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search individual node prices…" aria-label="Search tool credit prices"/>
+      {view==="automation"&&<p className="text-sm text-mist">Adjust individual processing nodes below. Ready-made data tools compose these same prices; their quote shows the exact steps selected. Set a node to 0 to make it free.</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {loading ? (
@@ -188,7 +198,7 @@ export default function AdminToolCostsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {tools.map((tool) => (
+          {tools.filter(t=>(view==="automation"?t.toolId.startsWith("flow-node:"):!t.toolId.startsWith("flow-node:"))&&`${t.label} ${t.toolId}`.toLowerCase().includes(query.toLowerCase())).map((tool) => (
             <ToolRow key={tool.toolId} tool={tool} onSave={saveTool} />
           ))}
         </div>

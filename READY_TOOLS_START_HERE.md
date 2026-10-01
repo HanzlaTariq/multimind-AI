@@ -60,11 +60,15 @@ Default download format, recent activity on/off, activity clear, aur saved optio
 
 ## Kaun se tools foran chalenge?
 
-- **10 browser-only tools:** upload/paste se chal jate hain; AI key ya external account nahi chahiye.
+- **10 data/text tools:** upload/paste ke baad Run par website server processing karta hai. Admin ke set kiye huay credits lagte hain; external AI key/account nahi chahiye.
 - **8 AI tools:** site owner ka working configured AI provider aur user credits chahiye. Visitor ko apni AI key dene ki zaroorat nahi. Example input bhi real AI run hai, free fake demo nahi.
 - **5 connected tools:** Google Sheets read, Gmail send, Slack, Discord aur Telegram. Relevant account/secret, permissions, service availability aur quotas chahiye.
 
 AI provider configure na ho to UI clearly batati hai aur run disable hota hai. Account connect hona service permissions ki guarantee nahi; owner ko real service test karna hoga.
+
+## Credit integration update
+
+Ab sab 23 tools existing user credits use karte hain. Run se pehle step-by-step quote dikhta hai. Admin → Tool Costs se per-node prices, charging on/off, paid native tests aur per-run limit control hote hain. Downloads/preview free hain, Run again naya run hai. Credit receipts activity history se alag retain hoti hain. Latest setup aur exact billing/refund rules: `CREDITS_START_HERE.md` aur `docs/AUTOMATION_CREDITS_GUIDE.md`.
 
 ## Before public launch
 

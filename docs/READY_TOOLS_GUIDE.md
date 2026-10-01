@@ -18,11 +18,11 @@ Routes:
 
 ## Implemented tools: 23
 
-### Browser-only: 10
+### Credit-authorized data/text tools: 10
 
 Clean & rank a dataset; Duplicate remover; Filter & sort; Email list cleaner; Dataset insights; Column organizer; CSV / Excel / JSON converter; Text cleaner; Word & text counter; JSON formatter.
 
-These run `lib/readyTools/local.mjs` in the browser. Table inputs support file upload, drag-and-drop, copied spreadsheet cells, CSV/TSV and JSON records. Suggestions recognize email and score/rating/points columns. Users can change deduplication keys, case matching, trimming, ranking column, minimum score, ordering and row limits. Cleaning/filters keep rejected rows with reasons. Input objects are cloned rather than mutated.
+These run the pure processors in `lib/readyTools/local.mjs` on the authenticated website server. File parsing/preview remains in the browser; pressing Run sends parsed rows or text to the server after a price quote. Admin-defined processing-step prices use the existing user credit balance. Table inputs support file upload, drag-and-drop, copied spreadsheet cells, CSV/TSV and JSON records. Suggestions recognize email and score/rating/points columns. Users can change deduplication keys, case matching, trimming, ranking column, minimum score, ordering and row limits. Cleaning/filters keep rejected rows with reasons. Input objects are cloned rather than mutated.
 
 Dataset insights supports per-column completeness/numeric statistics and grouped totals/averages. Column organizer supports selection, ordering and unique header names. The converter leaves surrounding cell whitespace unchanged by default. Other cleaning tools expose trim settings.
 
@@ -32,7 +32,7 @@ Email checks are syntax checks, not deliverability, consent or mailbox-existence
 
 Smart summarizer; Rewrite & polish; Translator; Email writer; Social caption studio; Blog outline builder; Meeting to action items; Customer reply assistant.
 
-These call existing `getAvailableProviders`, `routeToProvider`, `PROVIDER_CALLERS` and credit rules. Provider secrets remain server-side. Tone, output language and length are configurable; the caption tool also offers platform selection. Missing provider configuration or insufficient credit returns a real error rather than sample output. Account owners must verify that their configured provider/model combinations and quotas work. This patch does not certify every upstream API or model's current availability.
+These call existing `getAvailableProviders`, `routeToProvider` and `PROVIDER_CALLERS`. The automation meter is the only debit for these tool calls; legacy provider-based credit costs are not added a second time. Provider secrets remain server-side. Tone, output language and length are configurable; the caption tool also offers platform selection. Missing provider configuration or insufficient credit returns a real error rather than sample output. Account owners must verify that their configured provider/model combinations and quotas work. This patch does not certify every upstream API or model's current availability.
 
 Existing provider callers now accept an optional fourth `{ signal }` argument; previous three-argument consumers remain valid.
 
@@ -80,24 +80,28 @@ Settings now waits for an authenticated session before requesting account prefer
 | --- | --- |
 | `GET /api/ready-tools/workspace` | Current user's settings/favorites/presets/recent metadata |
 | `PATCH /api/ready-tools/workspace` | Whitelisted preference and metadata operations |
-| `GET /api/ready-tools/capabilities` | Configured AI provider labels/costs and safe connection metadata |
-| `POST /api/ready-tools/[toolId]/run` | Authenticated AI/connected execution |
+| `GET /api/ready-tools/capabilities` | Configured AI provider labels, automation balance/policy and safe connection metadata |
+| `POST /api/ready-tools/[toolId]/run` | Credit-authorized execution for all 23 tools |
 
-Existing NextAuth and MongoDB connection code are reused. Writes reject cross-site origins/fetch metadata, request bodies are bounded and raw inputs are not stored by these models. Local processors do not send source rows to these endpoints; their optional history sync sends counts/time only.
+Existing NextAuth and MongoDB connection code are reused. Writes reject cross-site origins/fetch metadata, request bodies are bounded and raw inputs are not stored by these models. Data/text tools send parsed source rows or text for server execution; billing and activity records do not store those inputs or result content. Quotes send options, not source rows/text.
 
 Three new collections/models:
 
 - `ReadyToolWorkspace`: unique user, preferences, favorites, presets and recent metadata.
 - `ReadyToolRun`: user/request-ID deduplication, tool/status/provider/credit metadata; expiry configured at seven days. MongoDB TTL deletion is asynchronous.
-- `ReadyToolGate`: one short-lived connected-run lock per user.
+- `ReadyToolGate`: one short-lived ready-tool run lock per user.
 
-Ensure database permissions allow creating these collections and indexes, especially the unique `(user, requestId)` index and TTL expiry index. No existing user/flow collection migration is required by the new schemas. If production disables automatic index creation, create/verify these indexes as part of deployment.
+Ensure database permissions allow creating these collections and indexes, especially the unique `(user, requestId)` index and TTL expiry index. The credit patch adds optional hidden reservation/journal fields to existing User documents and billing metadata to runs; old documents need no destructive migration. It also adds AutomationCreditPolicy and AutomationCreditReceipt collections. If production disables automatic index creation, create/verify these indexes as part of deployment.
 
-Connected/AI requests use a unique idempotency key, a per-user run gate and a ten-runs-per-minute limit. Service requests receive an 80-second abort signal; the application gate expires after 110 seconds. The route requests a 120-second host duration, but deployment/platform limits may be shorter. These are synchronous requests, not background jobs.
+All ready-tool requests require a unique idempotency key and a per-user run gate. The per-minute limit is 30 for data/text tools and 10 for AI/connected tools. Service requests receive an 80-second abort signal; the application gate expires after 110 seconds. The route requests a 120-second host duration, but deployment/platform limits may be shorter. These are synchronous requests, not background jobs.
 
-Credits are atomically reserved using a conditional decrement and refunded on handled failure. Database outages/process crashes can interrupt record updates/refunds; there is no distributed transaction or crash reconciliation worker. A provider may accept a message before a network timeout, so uncertain actions are not blindly retried. This is not an exactly-once delivery guarantee.
+Credits use the existing User balance. A bounded reservation is recorded on that same document, then successful processing nodes are settled and unused/confirmed-failed amounts are returned. After ten minutes, interrupted holds are reconciled when a credit endpoint is next opened; this is not a background recovery worker. Started actions with uncertain outcomes remain charged for review. No action is automatically resumed or replayed. See `AUTOMATION_CREDITS_GUIDE.md` for cycle boundaries, archive limitations and the admin controls. This is not an exactly-once delivery guarantee.
 
 The encrypted API credential store and safe HTTP allowlists are reused. Do not rotate/change `ENCRYPTION_KEY` as a setup step. Do not put provider keys into client code, public environment variables, presets or downloaded workflow files.
+
+## Credit integration
+
+`/dashboard/flows/credits` lists the user’s latest 50 automation receipts. `/admin/tool-costs` now separates automation node prices from existing document/PDF/TTS prices. See `AUTOMATION_CREDITS_GUIDE.md` and `AUTOMATION_CREDITS_TEST_REPORT.md` for the current implementation and tests.
 
 ## Launch requirements and boundaries
 

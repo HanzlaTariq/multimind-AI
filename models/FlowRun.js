@@ -15,6 +15,9 @@ const FlowRunLogSchema = new mongoose.Schema(
     attempts: { type: Number, default: 1 },
     durationMs: { type: Number, default: 0 },
     mock: { type: Boolean, default: false },
+    credits: { type: Number, default: 0 },
+    billingBlocked: { type: Boolean, default: false },
+    billingUncertain: { type: Boolean, default: false },
     pinned: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     status: {
@@ -53,6 +56,7 @@ const FlowRunSchema = new mongoose.Schema(
     cancelRequested: { type: Boolean, default: false },
     graphRevision: { type: Number, default: 1 },
     summary: { type: mongoose.Schema.Types.Mixed, default: {} },
+    billing: { type: mongoose.Schema.Types.Mixed, default: null },
     durationMs: { type: Number, default: 0 },
     logs: [FlowRunLogSchema],
     error: { type: String, default: null }, // top-level failure reason, if any

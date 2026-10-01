@@ -21,7 +21,7 @@ const DEMO_KEY='multimind-flow-studio-demo-v2';
 function initialDemo(){return {_id:'demo',revision:1,status:'draft',folder:'Personal',starred:false,settings:{concurrency:3,timeoutMs:90000},...buildProTemplate(PRO_TEMPLATES[0])};}
 function safeStorage(key,fallback){try{return JSON.parse(localStorage.getItem(key))||fallback;}catch{return fallback;}}
 function GraphEditor({flowId,demo=false}){
- const {settings:globalSettings}=useSettings();const theme=['light','sepia'].includes(globalSettings.theme)?'light':'dark';
+ const {settings:globalSettings,refresh:refreshCreditSettings}=useSettings();const runBusy=useRef(false);const theme=['light','sepia'].includes(globalSettings.theme)?'light':'dark';
  async function goToSettings(tab){try{if(flow)await saveCurrent();window.location.assign(`/dashboard/settings?tab=${tab}`);}catch(e){notify(e.message,true);}}
  const [flow,setFlow]=useState(null),[loadError,setLoadError]=useState('');
  const [nodes,setNodes,baseNodesChange]=useNodesState([]),[edges,setEdges,baseEdgesChange]=useEdgesState([]);
@@ -80,22 +80,34 @@ function GraphEditor({flowId,demo=false}){
  async function refreshRuns(){if(demo)return;try{const data=await api(`/api/flows/${flowId}/runs`);setRuns(data.runs||[]);}catch(e){notify(e.message,true);}}
  async function refreshVersions(){if(demo)return;try{const data=await api(`/api/flows/${flowId}/versions`);setVersions(data.versions||[]);}catch(e){notify(e.message,true);}}
  useEffect(()=>{if(flow&&!demo){if(tab==='executions')refreshRuns();if(tab==='versions')refreshVersions();}},[tab,!!flow]);
- async function executeRun(executionMode=mode,untilNodeId){
-  if(running)return;if(demo&&executionMode==='live'){notify('Live runs are available only in the authenticated server workspace',true);return;}
+ async function executeRun(executionMode=mode,untilNodeId,approvedBudget){
+  if(running||runBusy.current)return;if(demo&&executionMode==='live'){notify('Live runs are available only in the authenticated server workspace',true);return;}
   const problems=validateGraph(graph,NODE_TYPES,{forRun:true,mode:executionMode});if(problems.some(i=>i.severity==='error')){setModal('validation');notify('Resolve validation errors before execution',true);return;}
   try{await saveCurrent();}catch(e){notify(`Run stopped: ${e.message}`,true);return;}
+  if(!demo&&approvedBudget===undefined){
+   runBusy.current=true;
+   try{const {quote}=await api(`/api/flows/${flowId}/quote`,{method:'POST',body:JSON.stringify({mode:executionMode,untilNodeId})});
+    if(quote.overLimit)throw new Error(`This run exceeds the admin limit of ${quote.limit} credits.`);
+    if(quote.balance<quote.total)throw new Error(`This run needs up to ${quote.total} available credits; your balance is ${quote.balance}. Open Plan & Billing.`);
+    if(quote.total>0||executionMode==='live'){
+     setConfirm({title:executionMode==='live'?'Review live run & credit cost':'Review test run credit cost',message:`Reserve up to ${quote.total} credits from your ${quote.balance}-credit balance. Only started nodes can be charged; skipped branches and confirmed failed nodes are refunded. One charge per node, including its retries and per-item processing. Timed-out actions may remain charged if delivery is uncertain. ${executionMode==='live'?'This can send real messages, publish content and call external providers.':''}`,quote,action:()=>{setConfirm(null);executeRun(executionMode,untilNodeId,quote.total);}});return;
+    }
+    approvedBudget=0;
+   }catch(e){notify(e.message,true);return;}finally{runBusy.current=false;}
+  }
+  runBusy.current=true;
   setRunning(true);setShowConsole(true);setTab('editor');setRun({status:'running',mode:executionMode,logs:[]});abort.current=new AbortController();const start=Date.now();
   try{
    let result;
    if(demo){result=await executeWorkflow(graph,{mode:'test',input:flow.testInput||{},variables:flow.variables||{},definitions:NODE_TYPES,untilNodeId,signal:abort.current.signal,concurrency:flow.settings?.concurrency||3,timeoutMs:flow.settings?.timeoutMs||90000,onLog:async log=>{setRun(r=>({...r,logs:[...(r?.logs||[]),log]}));await new Promise(resolve=>setTimeout(resolve,90));}});result._id=uid('run');const historyRuns=[result,...runs].slice(0,20);setRuns(historyRuns);localStorage.setItem(`${DEMO_KEY}-runs`,JSON.stringify(historyRuns));}
    else {
     let polling=false;livePoll.current=setInterval(async()=>{if(polling)return;polling=true;try{const list=await api(`/api/flows/${flowId}/runs?limit=1`);const recent=list.runs?.[0];if(recent&&new Date(recent.startedAt).getTime()>=start-1000){const detail=await api(`/api/flows/${flowId}/runs/${recent._id}`);if(mounted.current)setRun(detail.run);}}catch{}finally{polling=false;}},1300);
-    const response=await api(`/api/flows/${flowId}/run`,{method:'POST',body:JSON.stringify({mode:executionMode,input:flow.testInput||{},untilNodeId})});result=response.run;refreshRuns();
+    const response=await api(`/api/flows/${flowId}/run`,{method:'POST',body:JSON.stringify({mode:executionMode,input:flow.testInput||{},untilNodeId,maxCredits:approvedBudget??0})});result=response.run;refreshRuns();
    }
    setRun(result);notify(result.status==='success'?`${executionMode==='test'?'Test':'Live run'} completed successfully`:result.status==='completed_with_errors'?'Run completed with handled errors':result.error||`Run ${result.status}`,result.status==='failed');
-  }catch(e){setRun(r=>({...r,status:'failed',error:e.message}));notify(e.message,true);}finally{clearInterval(livePoll.current);setRunning(false);}
+  }catch(e){setRun(r=>({...r,status:'failed',error:e.message}));notify(e.message,true);}finally{clearInterval(livePoll.current);setRunning(false);runBusy.current=false;if(!demo)refreshCreditSettings();}
  }
- function requestRun(untilNodeId){if(mode==='live')setConfirm({title:'Execute live actions?',message:'This run can send messages, publish content, call external APIs and use paid AI providers. Test mode uses fixtures; live mode does not. Check recipients and credentials first.',action:()=>{setConfirm(null);executeRun('live',untilNodeId);}});else executeRun('test',untilNodeId);}
+ function requestRun(untilNodeId){executeRun(mode,untilNodeId);}
  async function cancelRun(){if(demo){abort.current?.abort();notify('Cancellation requested');}else try{const data=await api(`/api/flows/${flowId}/cancel`,{method:'POST'});notify(data.message);}catch(e){notify(e.message,true);}}
  async function openRun(value){try{const result=demo?value:(await api(`/api/flows/${flowId}/runs/${value._id}`)).run;setRun(result);setShowConsole(true);setTab('editor');}catch(e){notify(e.message,true);}}
  async function checkpoint(){try{await saveCurrent();const label=checkpointName.trim()||`Checkpoint ${dateLabel(new Date())}`;if(demo){const item={_id:uid('version'),label,revision:revision.current,createdAt:new Date().toISOString(),snapshot:JSON.parse(JSON.stringify(latest.current))};const next=[item,...versions].slice(0,25);setVersions(next);localStorage.setItem(`${DEMO_KEY}-versions`,JSON.stringify(next));}else{await api(`/api/flows/${flowId}/versions`,{method:'POST',body:JSON.stringify({label})});await refreshVersions();}setModal(null);setCheckpointName('');notify('Checkpoint saved');}catch(e){notify(e.message,true);}}
@@ -142,7 +154,7 @@ function GraphEditor({flowId,demo=false}){
   {modal==='webhook'&&webhook&&<Modal title="Webhook token generated" subtitle="Copy this secret now. Closing this dialog hides it permanently; rotate the token to get a new one." onClose={()=>{setModal(null);setWebhook(null);}}><div className="fp-stack"><JsonView value={{url:webhook.url,method:'POST',headers:{Authorization:`Bearer ${webhook.token}`}}} title="PRIVATE WEBHOOK CONFIGURATION"/><div className="fp-expression-hint">Activate the workflow before sending a request. This endpoint returns a run ID and outcome; it does not echo internal step outputs. Keep the token on a trusted server.</div><Button icon="Copy" onClick={async()=>{try{await navigator.clipboard.writeText(`curl -X POST '${webhook.url}' -H 'Authorization: Bearer ${webhook.token}' -H 'Content-Type: application/json' -d '${JSON.stringify(flow.testInput||{})}'`);notify('Webhook example copied');}catch{notify('Clipboard unavailable. Copy the JSON manually.',true);}}}>Copy cURL example</Button></div></Modal>}
   {modal==='shortcuts'&&<Modal title="Stay in flow" subtitle="Keyboard shortcuts for the canvas. Shortcuts do not interfere with text editing." onClose={()=>setModal(null)}><div className="fp-shortcuts">{[['Command center','Ctrl / ⌘ K'],['Save workflow','Ctrl / ⌘ S'],['Test workflow','Ctrl / ⌘ Enter'],['Undo','Ctrl / ⌘ Z'],['Redo','Ctrl / ⌘ Shift Z'],['Duplicate selection','Ctrl / ⌘ D'],['Copy / paste nodes','Ctrl / ⌘ C / V'],['Select all nodes','Ctrl / ⌘ A'],['Fit canvas','F'],['Add sticky note','N'],['Delete selection','Delete / Backspace'],['Close selection','Escape']].map(([label,key])=><div key={label}><span>{label}</span><kbd className="fp-kbd">{key}</kbd></div>)}</div><p className="fp-muted" style={{fontSize:11,marginTop:20}}>Drag on the canvas to box-select. Middle/right-drag to pan. Scroll to zoom. Double-click an edge to edit its label.</p></Modal>}
   {edgeEdit&&<Modal title="Connection settings" onClose={()=>setEdgeEdit(null)} footer={<><Button variant="danger" icon="Trash2" onClick={()=>{remember();setEdges(es=>es.filter(e=>e.id!==edgeEdit.id));setEdgeEdit(null);}}>Delete connection</Button><Button variant="primary" onClick={()=>{remember();setEdges(es=>es.map(e=>e.id===edgeEdit.id?{...e,label:edgeEdit.label}:e));setEdgeEdit(null);}}>Save label</Button></>}><div className="fp-field"><label>Connection label</label><input value={edgeEdit.label} onChange={e=>setEdgeEdit({...edgeEdit,label:e.target.value})} maxLength={80} aria-label="Connection label" placeholder="e.g. Qualified lead"/></div></Modal>}
-  {confirm&&<Modal title={confirm.title} onClose={()=>setConfirm(null)} footer={<><Button onClick={()=>setConfirm(null)}>Cancel</Button><Button variant="primary" onClick={confirm.action}>Confirm</Button></>}><p style={{fontSize:13,color:'var(--fp-muted)',lineHeight:1.9}}>{confirm.message}</p></Modal>}
+  {confirm&&<Modal title={confirm.title} onClose={()=>setConfirm(null)} footer={<><Button onClick={()=>setConfirm(null)}>Cancel</Button><Button variant="primary" onClick={confirm.action}>Confirm</Button></>}><p style={{fontSize:13,color:'var(--fp-muted)',lineHeight:1.9}}>{confirm.message}</p>{confirm.quote&&<div style={{marginTop:16,maxHeight:220,overflow:'auto'}}>{confirm.quote.lines.map(l=><div key={l.nodeId} className="fp-row fp-between" style={{padding:'5px 0',fontSize:12}}><span>{l.label}</span><strong>{l.cost} cr</strong></div>)}</div>}</Modal>}
   {toast&&<div className={`fp-toast ${toast.error?'error':''}`} role="status"><Icon name={toast.error?'CircleAlert':'CircleCheck'} size={16} style={{color:toast.error?'var(--fp-red)':'var(--fp-green)'}}/>{toast.message}<Button icon="X" variant="ghost small" title="Dismiss notification" onClick={()=>setToast(null)}/></div>}
  </div>;
 }

@@ -1,0 +1,87 @@
+{
+  "patch": "MultiMind Credit CastError + Static Metadata Hotfix",
+  "version": "1.0.0",
+  "base": "Flow Studio Pro + Ready Tools Pro + Credits Admin update; prior Windows icon patch optional",
+  "updated": 4,
+  "newPayloadFiles": 7,
+  "runtimeUpdated": [
+    "models/User.js",
+    "app/icon.js",
+    "app/apple-icon.js",
+    "app/opengraph-image.js"
+  ],
+  "runtimeNew": [
+    "lib/metadata/brand-images.mjs"
+  ],
+  "manifestNotSelfHashed": true,
+  "databaseMigrationRequired": false,
+  "dependenciesChanged": false,
+  "files": [
+    {
+      "path": "CREDIT_ICON_FIX_START_HERE.md",
+      "change": "new",
+      "sha256": "e7d60a47a372170a063a15e742b18f042823a60d5d9f2bed79fb8838d33e2a18",
+      "previousSha256": null
+    },
+    {
+      "path": "VERIFY_CREDIT_ICON_FIX.cjs",
+      "change": "new",
+      "sha256": "080a33869c579e5fad02d19d86b56a0825fcb772ed1073fe311ab3b4efbfb29d",
+      "previousSha256": null
+    },
+    {
+      "path": "app/apple-icon.js",
+      "change": "updated",
+      "sha256": "f4cfe9b3e2eadebdc39b794fa9c5b88e3b3ab9d9fb74803028caa7fb7e21f0ce",
+      "previousSha256": "8a4433b2d69e6ed2d52c42de340c15d6c92328255184f250ce5a4afd732f3afb"
+    },
+    {
+      "path": "app/icon.js",
+      "change": "updated",
+      "sha256": "6b58e6f2eddd3e247da3375a18344f1bbed0d54956a70ab27820be48afd1228e",
+      "previousSha256": "7162b88922a25b01d25b23122481869f8f7cda23aed441d0898e9da92a9a58b5"
+    },
+    {
+      "path": "app/opengraph-image.js",
+      "change": "updated",
+      "sha256": "14f12e23f9185364b00c3b1bae3e276da074df17ab9db1149016de7bb380b46f",
+      "previousSha256": "4db8d75e0ef25646c26a6713b4ee7931eb3ad19f17efa8f78af8d5d2c6bb7b36"
+    },
+    {
+      "path": "docs/CREDIT_ICON_FIX_REPORT.md",
+      "change": "new",
+      "sha256": "2e4196f118ff5518e02b1f4538e1161bceeb7b74ef82b7cd86aef661f5d57755",
+      "previousSha256": null
+    },
+    {
+      "path": "lib/metadata/brand-images.mjs",
+      "change": "new",
+      "sha256": "819c528a11cc99575ab08d94b93fcf86b4c4bf7b1e83e71cbe67d9be2ae5067f",
+      "previousSha256": null
+    },
+    {
+      "path": "models/User.js",
+      "change": "updated",
+      "sha256": "9416dfa2830353710cb7c63f108fd13a04005d9699dfc1144bd1e4dce47091ec",
+      "previousSha256": "94402997efc1bd36dbaeae5d4ab081c261e9d43a5d1b25a43570cd3d6c101e0f"
+    },
+    {
+      "path": "tests/hotfix/credit-schema.test.cjs",
+      "change": "new",
+      "sha256": "171192f8972a40a09c1cdbf916c95a6bffee5a1549ea95ecac6381e36a56e337",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/hotfix/metadata.test.mjs",
+      "change": "new",
+      "sha256": "486811867e56fb42dbaa8963bf423ec2309ce506650c67576d8f7ef6a3175984",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/hotfix/ready-credit.test.mjs",
+      "change": "new",
+      "sha256": "451d34d8a25480f519402b24c05504f478c085bba425017eb3eeabc1e05d6de4",
+      "previousSha256": null
+    }
+  ]
+}

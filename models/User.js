@@ -1,5 +1,19 @@
 import mongoose from "mongoose";
 
+// A billing unit is a subdocument, not a string. `type` is a special
+// Mongoose schema option, so [{ key: String, type: String, ... }] would
+// incorrectly compile `units` as [String]. Use an explicit child schema.
+const AutomationCreditUnitSchema = new mongoose.Schema(
+  {
+    key: String,
+    type: { type: String },
+    label: String,
+    cost: Number,
+    status: String,
+  },
+  { _id: false },
+);
+
 const UserSchema = new mongoose.Schema(
   {
     name: {
@@ -48,6 +62,18 @@ const UserSchema = new mongoose.Schema(
     // explicitly, since this schema default can't read the DB.
     credits: { type: Number, default: 60 },
     creditsResetAt: { type: Date, default: Date.now },
+    // Reservations live beside the existing balance, so reserve/refund are atomic
+    // even on standalone MongoDB. Hidden by default from every normal user query.
+    automationCreditHolds: { type: [{
+      key: String, scope: String, reference: String, label: String,
+      reserved: Number, revision: { type: Number, default: 0 }, cycle: Date,
+      createdAt: Date, expiresAt: Date,
+      units: { type: [AutomationCreditUnitSchema], default: [] },
+      _id: false,
+    }], default: [], select: false },
+    // Last 20 receipts form an atomic refund journal; the archive collection is
+    // mirrored from here and can be repaired after an interrupted archive write.
+    automationCreditReceipts: { type: [mongoose.Schema.Types.Mixed], default: [], select: false },
     // Only set for JazzCash/Razorpay purchases, which don't auto-renew like
     // Stripe subscriptions do. Null for free users and Stripe subscribers.
     planExpiresAt: { type: Date, default: null },

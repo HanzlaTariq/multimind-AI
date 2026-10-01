@@ -1,0 +1,295 @@
+{
+  "name": "MultiMind \u2014 Credits + Admin Update Only",
+  "base": "Flow Studio Pro + Windows Icon Fix + Ready Tools Pro Update Only",
+  "countsIncludingManifest": {
+    "updated": 25,
+    "new": 23
+  },
+  "manifestSelfHash": "Not included",
+  "deletedFiles": [],
+  "dependenciesChanged": false,
+  "files": [
+    {
+      "path": "CREDITS_START_HERE.md",
+      "change": "new",
+      "sha256": "9b297a4b96d58666068f6a55d5952c0c14e355c7cc0dcc9ad475c17d0e9de677",
+      "previousSha256": null
+    },
+    {
+      "path": "READY_TOOLS_START_HERE.md",
+      "change": "updated",
+      "sha256": "031386d608a054ee5fef44ee9b9909b0c1ebf037a911c0763e3b2a0d061b6030",
+      "previousSha256": "a15409c06beafe022ef1c2df71bb01adf51fec7ce1826f515490029641955a0c"
+    },
+    {
+      "path": "VERIFY_CREDIT_PATCH.cjs",
+      "change": "new",
+      "sha256": "db19838c9fe76f55cdeea52dd254d5313dae8761b5db0798c536ec94651437fb",
+      "previousSha256": null
+    },
+    {
+      "path": "app/admin/tool-costs/page.js",
+      "change": "updated",
+      "sha256": "22e0fce959f92caa9f8c9189ec6af8a30be8c79873aecf4518be6593db9d7b57",
+      "previousSha256": "c0900a85dc2748e9109ea8a8200dc2dceb0a38f6363bba698f368f7dc965c717"
+    },
+    {
+      "path": "app/api/admin/automation-credits/route.js",
+      "change": "new",
+      "sha256": "b99584f449b9a6e74905e62e95746a1bb1456b45beeb358d17c52193204928a9",
+      "previousSha256": null
+    },
+    {
+      "path": "app/api/admin/tool-costs/[toolId]/route.js",
+      "change": "updated",
+      "sha256": "5fd8d40276b8509ed282a950ce6b214220b4726b74c00995f6df5fec48b24e1c",
+      "previousSha256": "7ab71fd9bb04ce2edea3c7e1ebe45eb47fcb3a4d8a8f4ac7f69ea3cb98f6bf95"
+    },
+    {
+      "path": "app/api/admin/tool-costs/route.js",
+      "change": "updated",
+      "sha256": "f932c2cc462c3c4a9e1fc4be5eab218d8b4a6a3c32947f635b266c2007bf27e0",
+      "previousSha256": "eba197cc3cdda7a672f299949d82bc9b2c9634574a8145bb1a58c42ef42667fb"
+    },
+    {
+      "path": "app/api/admin/users/[id]/route.js",
+      "change": "updated",
+      "sha256": "902e30d5f1af48fe71aefea683bb28c6bf3b008bfedbf09583c4423693fd161b",
+      "previousSha256": "5517e68bb9e732621441804e8b53bf52d3445b0447f5e8402b2e27993d0aef57"
+    },
+    {
+      "path": "app/api/automation-credits/route.js",
+      "change": "new",
+      "sha256": "ec471f78a63686a956c6097da42a9a9cbc3b9dee4912b6457002f598eb77f80f",
+      "previousSha256": null
+    },
+    {
+      "path": "app/api/flows/[id]/quote/route.js",
+      "change": "new",
+      "sha256": "1593997c7059af3056d066af8d492d0b74e34a68e446d391dec72252d6085c4e",
+      "previousSha256": null
+    },
+    {
+      "path": "app/api/flows/[id]/run/route.js",
+      "change": "updated",
+      "sha256": "441a980543550a38b4ef7f56531a27e178bd5407f330fe71cf6fb3daff92f305",
+      "previousSha256": "b889bc6f0d04c7aa7c5549fdf7fa9a9148a7caee6cf3eb6fdcf408f35447ada2"
+    },
+    {
+      "path": "app/api/flows/[id]/runs/route.js",
+      "change": "updated",
+      "sha256": "295aa88eca16cc1bbeffa2014ca79b87103800af8781f5acbc66bc6b008694da",
+      "previousSha256": "3a33f7a6b32d9fe777321d087fe6ed4349bfd28eb2a7e2b8a9b77d7110173f4f"
+    },
+    {
+      "path": "app/api/flows/blueprint/route.js",
+      "change": "updated",
+      "sha256": "2a70cc5bd5a768a0ff79e7c57b2ecbac33e37de6089f9b260c04425f3a037d4d",
+      "previousSha256": "1b0434afe7f28008c3e2e077c1b0ba6e513de7708be119311d3eeed53498792b"
+    },
+    {
+      "path": "app/api/ready-tools/[toolId]/quote/route.js",
+      "change": "new",
+      "sha256": "793cc1180b613365b85fab78b54fee3438e735665cda2cbfbbc99caba470b703",
+      "previousSha256": null
+    },
+    {
+      "path": "app/dashboard/flows/credits/page.js",
+      "change": "new",
+      "sha256": "6223f77c218119ef4846265bbf81bba840e574edaf2f9986912d5ecc34651cda",
+      "previousSha256": null
+    },
+    {
+      "path": "components/admin/AutomationCreditsAdmin.jsx",
+      "change": "new",
+      "sha256": "6f387f266a51d5ad3adff7032014bb0b2031dc7485845ea18ead2b154296e3a9",
+      "previousSha256": null
+    },
+    {
+      "path": "components/credits/CreditActivity.jsx",
+      "change": "new",
+      "sha256": "2395c25d308ae779f96a0bf7d9a14ec22022c3091e6ffb7de4136859e97d83cf",
+      "previousSha256": null
+    },
+    {
+      "path": "components/credits/ToolCreditQuote.jsx",
+      "change": "new",
+      "sha256": "50086eb0a3bc6e851efd58ef02b4e8d503a1b305812c5cde9972b9257cdd6690",
+      "previousSha256": null
+    },
+    {
+      "path": "components/flows/pro/FlowStudio.jsx",
+      "change": "updated",
+      "sha256": "ab67dc8de2a0d02c37bf65d6c682fab9c9aeeff4c40b9e98f63c65a04b9aa385",
+      "previousSha256": "8f0edb2047f74445784ba3c9a3996f68e60af2bba591b3492c3eb5adf28def86"
+    },
+    {
+      "path": "components/flows/pro/Panels.jsx",
+      "change": "updated",
+      "sha256": "f2392b3f27f4bb3920650777f9542f07aef2a3195337cda8c3989ef908ca413a",
+      "previousSha256": "2653fb9e0056a3886de48dc492be7da372690dce0dd52f918beb929d4aed0fd3"
+    },
+    {
+      "path": "components/ready-tools/ToolHub.jsx",
+      "change": "updated",
+      "sha256": "98ab58e4eeec4d086e4ed969e2ed170234c3f623f4e6503d55225b42bc6f4f27",
+      "previousSha256": "bd22dcc9e0d8996b88a3c74c0caba9463286d63a47dd981fc5919fff3593a9be"
+    },
+    {
+      "path": "components/ready-tools/ToolRunner.jsx",
+      "change": "updated",
+      "sha256": "3e792098abf586bb116ae7ff23e072087288c345e75eba9f1f17b13dd7407ff1",
+      "previousSha256": "903ae26d27e69a9c3a4c8901e4cf8a5757b41305a5506cdf4da578200bf7f717"
+    },
+    {
+      "path": "components/ready-tools/tools.css",
+      "change": "updated",
+      "sha256": "520ca6cd9b2a9fee8b91659e01c83240e725376df3b670daaf6e0e6b0a72efdc",
+      "previousSha256": "300f293b1db4c6936a109cb9b281038e44c8eb5a260d03f4ec3cac894da98b1c"
+    },
+    {
+      "path": "components/ready-tools/ui.jsx",
+      "change": "updated",
+      "sha256": "b423a478af20284efc8c4675677dcd0724c3d0376f291584ed059458470f9e70",
+      "previousSha256": "1bf595b3f6a0ba48048bd626594f6cca7ef3f847de370f73170343cd80022f61"
+    },
+    {
+      "path": "components/settings/ToolPreferencesTab.jsx",
+      "change": "updated",
+      "sha256": "9eb06e66740e8669b2711788b3c7e4e164163f32e7e09c702fbd6e0e83078a51",
+      "previousSha256": "4cf4252d88d8b21f29aa4e1dabef6dc81d6f3f6a7564404955ad1d512220ddff"
+    },
+    {
+      "path": "docs/AUTOMATION_CREDITS_GUIDE.md",
+      "change": "new",
+      "sha256": "1f7d20f37d1f7e13350c221f2723d972ee5bc8a57e28a0ce6cbf17bf0be1112a",
+      "previousSha256": null
+    },
+    {
+      "path": "docs/AUTOMATION_CREDITS_TEST_REPORT.md",
+      "change": "new",
+      "sha256": "37bf9f09ae5e0890cca6b2c42ccc57f8053f24ec3b5ed242ab5e218cc11b5b34",
+      "previousSha256": null
+    },
+    {
+      "path": "docs/READY_TOOLS_GUIDE.md",
+      "change": "updated",
+      "sha256": "0f9147522e808e9b87e1c1eeb276374b41e127e9f8d268ab8f59154fc4c331ce",
+      "previousSha256": "1c3809989d0250e939f4c3143d7573f8a7e9689891a2284aaca6ab75fa19d35d"
+    },
+    {
+      "path": "lib/admin.js",
+      "change": "updated",
+      "sha256": "c5a8ff4a81124572b7fb6e0f9a3cce8e3e471563d304a2713c0c3ef977cdd214",
+      "previousSha256": "f1fe440a2d674e549748b4cd832c083ae81bec751889e478292b359dd5cebcce"
+    },
+    {
+      "path": "lib/automationCredits/config.js",
+      "change": "new",
+      "sha256": "25ea45a10dcb4084c13e8b1bba755e3081e97841e879bd3d582172a173f8494d",
+      "previousSha256": null
+    },
+    {
+      "path": "lib/automationCredits/pricing.mjs",
+      "change": "new",
+      "sha256": "ff1b2d47ce343bdb0b3423b616cac383983d6eafc67eb6cf56f10a60415666c7",
+      "previousSha256": null
+    },
+    {
+      "path": "lib/automationCredits/wallet.js",
+      "change": "new",
+      "sha256": "aa0cfef08b862d8f48abe540f391f87f28d3c60f3f23f643725e3fbc439b9f51",
+      "previousSha256": null
+    },
+    {
+      "path": "lib/flowNodes/runFlow.js",
+      "change": "updated",
+      "sha256": "cefe11710ab70fcbd5a772f22f9d3f7c8fce4d1ce8a505289d333613d19ac690",
+      "previousSha256": "01592d931e8ad84bb49de7a19c47496623f63074d15bc1a972fc74dd8798ea29"
+    },
+    {
+      "path": "lib/flowPro/engine.mjs",
+      "change": "updated",
+      "sha256": "8c5b81fb0086c3419877cfc774e4a2fc0c2cc076fefb13f496e657987446aa20",
+      "previousSha256": "267011c2272ad6838a4b556e894f65f891e578ff957fa839f15067bdaff83acc"
+    },
+    {
+      "path": "lib/flowPro/server.js",
+      "change": "updated",
+      "sha256": "58bf834dce8c95f4656f9f62d009842e6e5f4a925b802eac17fe8d759fe16511",
+      "previousSha256": "4c8c412a10f3b0d12a3361445cdfc29ab412c199121552530c38103a786cfb45"
+    },
+    {
+      "path": "lib/plans.js",
+      "change": "updated",
+      "sha256": "ca133a49f19be63f23b49150f885e94f94fa0f8844a3c60c78c2bbd5514c79bd",
+      "previousSha256": "6f69fe44a618fac9aa40395d6e990feb6bb037609ae113a3cbfa256d0bfeb42d"
+    },
+    {
+      "path": "lib/readyTools/server.js",
+      "change": "updated",
+      "sha256": "87314a441de959888fe974823d05976fa89d4e4555e50d309e938f907d78e72d",
+      "previousSha256": "888c609822f892d1c0156554fd075f0f9d6edc1980a832b7353df9898faa2411"
+    },
+    {
+      "path": "models/AutomationCreditPolicy.js",
+      "change": "new",
+      "sha256": "b0abc70c193a5ce2a12ca79aec59b5670d8c422e2e89efec5ff4603b8627c82b",
+      "previousSha256": null
+    },
+    {
+      "path": "models/AutomationCreditReceipt.js",
+      "change": "new",
+      "sha256": "f59c916fe290587ece1d528978a6e913c24096e6762d8109cd93f1a1aae89eb0",
+      "previousSha256": null
+    },
+    {
+      "path": "models/FlowRun.js",
+      "change": "updated",
+      "sha256": "5411e2687e44f84e2168c03f43009fc5f31b7e779b09c7433ebb079caf23547a",
+      "previousSha256": "3feca25b26c252ff4cf79c29ded08102b3e528ff0eaac93dec28d11052b0eaf7"
+    },
+    {
+      "path": "models/ReadyToolRun.js",
+      "change": "updated",
+      "sha256": "3cf0a2c5c91edca8b68469e6ad37d53b6db65b5e2dc9cebe1ae6011a46f3037a",
+      "previousSha256": "0ec8042e7b8581ed7dd510122a82d805001c0837981303360e6908fb157d63e5"
+    },
+    {
+      "path": "models/User.js",
+      "change": "updated",
+      "sha256": "94402997efc1bd36dbaeae5d4ab081c261e9d43a5d1b25a43570cd3d6c101e0f",
+      "previousSha256": "443568d8cf9f312d4a5cfa9e7f007774ce0e097c7ec95d74d448ef5d8f9a23a7"
+    },
+    {
+      "path": "tests/credits/access.test.mjs",
+      "change": "new",
+      "sha256": "897be9fa3463be4c8ab58cb9b296c0c331abf019eb1155cfed17c02a51256826",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/credits/execution.test.mjs",
+      "change": "new",
+      "sha256": "909b5a42065580f9f4bda89e7488d82685333d4d4b9ec01acdb7fa8a69ddf06a",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/credits/fake-mongo.mjs",
+      "change": "new",
+      "sha256": "68234b13426267c36a7680cfe8061bd4dfcb5531843a58ebcac8e9ad26cb3412",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/credits/pricing.test.mjs",
+      "change": "new",
+      "sha256": "37643a75feaf36f7f8e8ffe408f93c4acdac35287567c01c97e4a682b5167098",
+      "previousSha256": null
+    },
+    {
+      "path": "tests/credits/wallet.test.mjs",
+      "change": "new",
+      "sha256": "dc97f33541bfcd9570f774ef82c4d0a3dd0cead4cb75ba1bfe1218a873f7b465",
+      "previousSha256": null
+    }
+  ]
+}

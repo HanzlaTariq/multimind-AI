@@ -1,3 +1,4 @@
+import { assertSameOrigin,readJSON } from "@/lib/flowPro/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Conversation from "@/models/Conversation";
@@ -30,8 +31,11 @@ export async function PATCH(req, { params }) {
 
   await dbConnect();
 
-  const body = await req.json();
+  let body;
+  try { assertSameOrigin(req); body=await readJSON(req); }
+  catch(e) { return Response.json({error:e.message},{status:e.status||400}); }
   const update = {};
+  const changesBalance = typeof body.plan === "string" || typeof body.credits === "number";
 
   if (typeof body.plan === "string") {
     const plans = await getPlans();
@@ -47,6 +51,7 @@ export async function PATCH(req, { params }) {
   }
 
   if (typeof body.credits === "number") {
+    if (!Number.isFinite(body.credits) || body.credits < 0) return Response.json({error:"Credits must be a finite non-negative number"},{status:400});
     update.credits = Math.max(0, Math.floor(body.credits));
   }
 
@@ -72,7 +77,10 @@ export async function PATCH(req, { params }) {
     return Response.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  const user = await User.findByIdAndUpdate(params.id, update, {
+  // Do not replace a balance while an automation reservation can still refund it.
+  if (typeof body.plan === "string") update.creditsResetAt = new Date();
+  const filter = {_id:params.id,...(changesBalance?{"automationCreditHolds.0":{$exists:false}}:{})};
+  const user = await User.findOneAndUpdate(filter, update, {
     new: true,
     runValidators: true,
   })
@@ -80,6 +88,7 @@ export async function PATCH(req, { params }) {
     .lean();
 
   if (!user) {
+    if(changesBalance && await User.exists({_id:params.id})) return Response.json({error:"This user has an unsettled automation run. Let it finish, or recover expired runs from Credit activity, before changing the plan or balance."},{status:409});
     return Response.json({ error: "User not found" }, { status: 404 });
   }
 
