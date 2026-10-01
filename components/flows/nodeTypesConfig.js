@@ -1,3 +1,4 @@
+import { PRO_NODES, PRO_CATEGORIES, OPERATORS, PLANNED_TYPES, CONNECTED_TYPES } from "../../lib/flowPro/catalog.mjs";
 // The built-in node library. Each entry is metadata + a `configSchema`
 // (which fields the inspector renders, stored under node.data.config) plus
 // a `type` string the execution engine keys off. This file stays plain
@@ -15,6 +16,7 @@
 //     placeholder?, helpText?, options?: [{value,label}], default? }
 
 export const NODE_CATEGORIES = {
+  ...PRO_CATEGORIES,
   trigger: { label: "Triggers", accent: "amber" },
   ai: { label: "AI Content", accent: "violet" },
   platform: { label: "Platform Actions", accent: "sky" },
@@ -377,6 +379,24 @@ export const NODE_TYPES = [
   },
 ];
 
+// Flow Studio v2: preserve legacy type IDs and enrich their schemas.
+NODE_TYPES.push(...PRO_NODES);
+for (const definition of NODE_TYPES) {
+  definition.capability ||= PLANNED_TYPES.has(definition.type) ? 'planned' : CONNECTED_TYPES.has(definition.type) ? 'connected' : 'native';
+  definition.external ||= CONNECTED_TYPES.has(definition.type) || PLANNED_TYPES.has(definition.type);
+}
+const condition = NODE_TYPES.find(n => n.type === 'logic.condition');
+condition.configSchema.find(f => f.key === 'field').helpText = 'A dot path in the incoming data, for example customer.score. Leave blank to check the entire input.';
+condition.configSchema.find(f => f.key === 'operator').options = OPERATORS.map(value => ({value,label:value}));
+const delay = NODE_TYPES.find(n => n.type === 'logic.delay');
+delay.description = 'Short inline wait, capped at 10 seconds. Test mode skips the wait.';
+delay.configSchema = [{key:'durationSeconds',label:'Wait in seconds (0–10)',type:'number',default:1,min:0,max:10}];
+const loop = NODE_TYPES.find(n => n.type === 'logic.loop');
+loop.label = 'Prepare Items';
+loop.description = 'Select an array, then enable per-item execution on a downstream node.';
+const schedule = NODE_TYPES.find(n => n.type === 'trigger.schedule');
+schedule.configSchema.push({key:'timezone',label:'IANA timezone',type:'text',default:'Asia/Karachi',helpText:'Example: Asia/Karachi, Europe/London or UTC. Requires the cron endpoint to be invoked.'});
+
 export function getNodeTypeDef(type) {
   return NODE_TYPES.find((n) => n.type === type) || null;
 }
@@ -399,6 +419,7 @@ export function getNodeSummary(nodeType, config = {}) {
       ? `Every ${config.dayOfWeek || "week"} at ${config.time}`
       : `Daily at ${config.time}`;
   }
+  if (nodeType === "logic.delay" && config.durationSeconds !== undefined) return `Waits ${config.durationSeconds} seconds`;
   if (nodeType === "logic.delay" && config.durationMinutes) {
     return `Waits ${config.durationMinutes} min`;
   }

@@ -1,0 +1,112 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.486Z",
+  "name": "Map & summarize orders",
+  "description": "Transform each order and calculate the total order value.",
+  "tags": [
+    "Items",
+    "Revenue"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_nd2qhif",
+      "type": "trigger.manual",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Orders received",
+        "config": {}
+      }
+    },
+    {
+      "nodeId": "node_1_tlw3k7p",
+      "type": "data.split",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Order items",
+        "config": {
+          "field": "orders"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_34vcgot",
+      "type": "data.map",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Normalize orders",
+        "config": {
+          "fields": "{\"id\":\"{{ $item.id }}\",\"amount\":\"{{ $item.total }}\",\"currency\":\"USD\"}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_5xmlup5",
+      "type": "data.aggregate",
+      "position": {
+        "x": 1020,
+        "y": 200
+      },
+      "data": {
+        "label": "Revenue total",
+        "config": {
+          "operation": "sum",
+          "field": "amount"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_oubmrmp",
+      "source": "node_0_nd2qhif",
+      "target": "node_1_tlw3k7p",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_eoqngq1",
+      "source": "node_1_tlw3k7p",
+      "target": "node_2_34vcgot",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_ekcazt8",
+      "source": "node_2_34vcgot",
+      "target": "node_3_5xmlup5",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "orders": [
+      {
+        "id": "ORD-001",
+        "total": 120
+      },
+      {
+        "id": "ORD-002",
+        "total": 249
+      },
+      {
+        "id": "ORD-003",
+        "total": 89
+      }
+    ]
+  }
+}

@@ -1,0 +1,197 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.484Z",
+  "name": "Smart lead qualification",
+  "description": "Clean incoming leads, route by score, and merge the right follow-up.",
+  "tags": [
+    "Sales",
+    "Routing"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_xfpvnxq",
+      "type": "trigger.webhook",
+      "position": {
+        "x": 60,
+        "y": 240
+      },
+      "data": {
+        "label": "Lead received",
+        "config": {
+          "sampleBody": "{\"name\":\"Ayesha Khan\",\"email\":\"ayesha@example.com\",\"company\":\"Orbit Studio\",\"score\":86,\"source\":\"Website\"}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_1_9m01zvl",
+      "type": "data.set",
+      "position": {
+        "x": 380,
+        "y": 240
+      },
+      "data": {
+        "label": "Normalize lead",
+        "config": {
+          "fields": "{\"source\":\"{{ $json.source ?? 'Website' }}\",\"receivedAt\":\"{{ $run.startedAt }}\"}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_o7dh47h",
+      "type": "logic.condition",
+      "position": {
+        "x": 700,
+        "y": 240
+      },
+      "data": {
+        "label": "High-intent lead?",
+        "config": {
+          "field": "score",
+          "operator": "gte",
+          "value": "70"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_45p4t5w",
+      "type": "data.set",
+      "position": {
+        "x": 1020,
+        "y": 100
+      },
+      "data": {
+        "label": "Sales-ready",
+        "config": {
+          "fields": "{\"segment\":\"sales-ready\",\"priority\":\"high\",\"nextAction\":\"Book a discovery call\"}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_4_v1j7tds",
+      "type": "data.set",
+      "position": {
+        "x": 1020,
+        "y": 420
+      },
+      "data": {
+        "label": "Nurture sequence",
+        "config": {
+          "fields": "{\"segment\":\"nurture\",\"priority\":\"normal\",\"nextAction\":\"Send helpful resources\"}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_5_g4wth40",
+      "type": "data.merge",
+      "position": {
+        "x": 1340,
+        "y": 240
+      },
+      "data": {
+        "label": "Merge follow-up",
+        "config": {
+          "mode": "object"
+        }
+      }
+    },
+    {
+      "nodeId": "node_6_yg5i1cs",
+      "type": "utility.log",
+      "position": {
+        "x": 1660,
+        "y": 240
+      },
+      "data": {
+        "label": "Lead ready",
+        "config": {
+          "message": "Lead qualified and routed"
+        }
+      }
+    },
+    {
+      "nodeId": "node_7_61b5zee",
+      "type": "utility.note",
+      "position": {
+        "x": 690,
+        "y": -20
+      },
+      "data": {
+        "label": "Routing rules",
+        "config": {
+          "text": "LEAD QUALIFICATION\nScore ≥ 70 → sales team\nScore < 70 → nurture\n\nTest both branches by changing the input score."
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_nnfx9pn",
+      "source": "node_0_xfpvnxq",
+      "target": "node_1_9m01zvl",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_jqey8uc",
+      "source": "node_1_9m01zvl",
+      "target": "node_2_o7dh47h",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_p24u6xz",
+      "source": "node_2_o7dh47h",
+      "target": "node_3_45p4t5w",
+      "sourceHandle": "true",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_vhjyxb8",
+      "source": "node_2_o7dh47h",
+      "target": "node_4_v1j7tds",
+      "sourceHandle": "false",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_4_gnywm3p",
+      "source": "node_3_45p4t5w",
+      "target": "node_5_g4wth40",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_5_2s6k6ns",
+      "source": "node_4_v1j7tds",
+      "target": "node_5_g4wth40",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_6_weslfss",
+      "source": "node_5_g4wth40",
+      "target": "node_6_yg5i1cs",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "name": "Ayesha Khan",
+    "email": "ayesha@example.com",
+    "company": "Orbit Studio",
+    "score": 86,
+    "source": "Website"
+  }
+}

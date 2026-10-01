@@ -1,5 +1,7 @@
 # MultiMind — Multi-AI Aggregator (Next.js)
 
+> **Flow Studio Pro upgrade:** Start with [`START_HERE.md`](START_HERE.md). The full guide is [`docs/FLOW_STUDIO_GUIDE.md`](docs/FLOW_STUDIO_GUIDE.md), and verification details are in [`docs/VERIFICATION.md`](docs/VERIFICATION.md). Preserve your existing `.env.local` and encryption key when updating.
+
 Aik prompt bhejo — MultiMind har message ke liye khud smart routing se best-fit provider choose karta hai (available providers me se, jinke API keys set hain: Groq, Gemini, DeepSeek, Grok, ChatGPT, Claude), taake har query sabse suitable aur affordable model se answer ho, sab models ko parallel call kiye baghair. Full auth (Google + email/password), MongoDB me har conversation save hoti hai.
 
 > **Security note:** Conversation data (title, prompts, AI responses) is encrypted **at rest** in MongoDB (AES-256-GCM). This is **not end-to-end encryption** — see [Encryption](#encryption) below for what that means in practice.

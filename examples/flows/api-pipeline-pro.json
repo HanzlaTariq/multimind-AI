@@ -1,0 +1,121 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.485Z",
+  "name": "API → transform → report",
+  "description": "Fetch from an approved HTTPS API, extract items and generate a count.",
+  "tags": [
+    "API",
+    "Report"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_f3b8e4d",
+      "type": "trigger.manual",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Start",
+        "config": {}
+      }
+    },
+    {
+      "nodeId": "node_1_xz6l9vm",
+      "type": "action.http",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Fetch data",
+        "config": {
+          "url": "https://api.example.com/v1/items",
+          "method": "GET",
+          "headers": "{}",
+          "body": "{}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_vb80ch5",
+      "type": "data.split",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Get items",
+        "config": {
+          "field": "body.items"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_cb29qcv",
+      "type": "data.aggregate",
+      "position": {
+        "x": 1020,
+        "y": 200
+      },
+      "data": {
+        "label": "Total items",
+        "config": {
+          "operation": "count"
+        }
+      }
+    },
+    {
+      "nodeId": "node_4_zdg4q3c",
+      "type": "utility.log",
+      "position": {
+        "x": 1340,
+        "y": 200
+      },
+      "data": {
+        "label": "Report",
+        "config": {
+          "message": "API data processed"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_wqb0f0b",
+      "source": "node_0_f3b8e4d",
+      "target": "node_1_xz6l9vm",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_m71eaep",
+      "source": "node_1_xz6l9vm",
+      "target": "node_2_vb80ch5",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_lfadlks",
+      "source": "node_2_vb80ch5",
+      "target": "node_3_cb29qcv",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_0yxhnt0",
+      "source": "node_3_cb29qcv",
+      "target": "node_4_zdg4q3c",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {}
+}

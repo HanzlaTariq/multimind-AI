@@ -1,0 +1,167 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.485Z",
+  "name": "Clean & rank a dataset",
+  "description": "Split records, deduplicate, filter and sort the best matches.",
+  "tags": [
+    "ETL",
+    "Data"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_zy0ap2q",
+      "type": "trigger.manual",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Start",
+        "config": {}
+      }
+    },
+    {
+      "nodeId": "node_1_x8yjf66",
+      "type": "data.split",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Extract contacts",
+        "config": {
+          "field": "contacts"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_26jl15s",
+      "type": "data.deduplicate",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Unique emails",
+        "config": {
+          "field": "email"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_sajlvae",
+      "type": "data.filter",
+      "position": {
+        "x": 1020,
+        "y": 200
+      },
+      "data": {
+        "label": "Score ≥ 60",
+        "config": {
+          "field": "score",
+          "operator": "gte",
+          "value": "60"
+        }
+      }
+    },
+    {
+      "nodeId": "node_4_3isjwtu",
+      "type": "data.sort",
+      "position": {
+        "x": 1340,
+        "y": 200
+      },
+      "data": {
+        "label": "Rank by score",
+        "config": {
+          "field": "score",
+          "direction": "descending"
+        }
+      }
+    },
+    {
+      "nodeId": "node_5_vpxkfma",
+      "type": "data.limit",
+      "position": {
+        "x": 1660,
+        "y": 200
+      },
+      "data": {
+        "label": "Top 10",
+        "config": {
+          "limit": 10,
+          "offset": 0
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_lgitw6i",
+      "source": "node_0_zy0ap2q",
+      "target": "node_1_x8yjf66",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_uqlzaib",
+      "source": "node_1_x8yjf66",
+      "target": "node_2_26jl15s",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_abhl0va",
+      "source": "node_2_26jl15s",
+      "target": "node_3_sajlvae",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_gtb76fs",
+      "source": "node_3_sajlvae",
+      "target": "node_4_3isjwtu",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_4_1gfhoha",
+      "source": "node_4_3isjwtu",
+      "target": "node_5_vpxkfma",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "contacts": [
+      {
+        "name": "Ayesha",
+        "email": "a@example.com",
+        "score": 92
+      },
+      {
+        "name": "Ali",
+        "email": "b@example.com",
+        "score": 72
+      },
+      {
+        "name": "Ayesha",
+        "email": "a@example.com",
+        "score": 92
+      },
+      {
+        "name": "Sara",
+        "email": "c@example.com",
+        "score": 45
+      }
+    ]
+  }
+}

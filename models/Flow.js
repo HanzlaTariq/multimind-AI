@@ -29,6 +29,7 @@ const FlowEdgeSchema = new mongoose.Schema(
     target: { type: String, required: true }, // nodeId
     sourceHandle: { type: String, default: null },
     targetHandle: { type: String, default: null },
+    label: { type: String, default: "", maxlength: 80 },
   },
   { _id: false },
 );
@@ -38,6 +39,17 @@ const FlowSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: "" },
+    revision: { type: Number, default: 1 },
+    tags: { type: [String], default: [] },
+    folder: { type: String, default: "Personal" },
+    starred: { type: Boolean, default: false },
+    variables: { type: mongoose.Schema.Types.Mixed, default: {} },
+    testInput: { type: mongoose.Schema.Types.Mixed, default: {} },
+    settings: { type: mongoose.Schema.Types.Mixed, default: { concurrency: 3, timeoutMs: 90000 } },
+    viewport: { type: mongoose.Schema.Types.Mixed, default: null },
+    executionLockUntil: { type: Date, default: null },
+    webhookTokenHash: { type: String, default: null, select: false },
+    webhookLastRunAt: { type: Date, default: null },
     nodes: [FlowNodeSchema],
     edges: [FlowEdgeSchema],
     status: {

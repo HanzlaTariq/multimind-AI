@@ -1,0 +1,82 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.486Z",
+  "name": "Scheduled team digest",
+  "description": "Create an AI summary and deliver it to a Slack channel.",
+  "tags": [
+    "Schedule",
+    "Slack"
+  ],
+  "variables": {
+    "updates": "Replace this with your team updates or connect an upstream data source."
+  },
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_u560l88",
+      "type": "trigger.schedule",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Weekday digest",
+        "config": {
+          "frequency": "weekly",
+          "dayOfWeek": "mon",
+          "time": "09:00",
+          "timezone": "Asia/Karachi"
+        }
+      }
+    },
+    {
+      "nodeId": "node_1_bf1t0p8",
+      "type": "ai.summarize",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Summarize updates",
+        "config": {
+          "text": "{{ $vars.updates }}",
+          "words": 100
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_lavul89",
+      "type": "action.slack",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Send to Slack",
+        "config": {
+          "text": "Weekly digest: {{ $json }}"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_izrjxhp",
+      "source": "node_0_u560l88",
+      "target": "node_1_bf1t0p8",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_2w3058m",
+      "source": "node_1_bf1t0p8",
+      "target": "node_2_lavul89",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {}
+}

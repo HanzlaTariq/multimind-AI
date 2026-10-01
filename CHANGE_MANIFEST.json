@@ -1,0 +1,482 @@
+{
+  "upgrade": "MultiMind Flow Studio Pro",
+  "date": "2026-10-01",
+  "source": "multimind-AI-main.zip",
+  "counts": {
+    "added": 49,
+    "modified": 16,
+    "unchanged": 204
+  },
+  "added": [
+    {
+      "path": ".env.example",
+      "sha256": "d8e2e96b10822a4ae185a7b0f724beb82959bab30f478172d32cf082f975e832"
+    },
+    {
+      "path": "START_HERE.md",
+      "sha256": "e7191acf160a67e3e493749939b0145a9151309ec4d54e5c839b8dfeab6ab8c2"
+    },
+    {
+      "path": "app/api/cron/flows/route.js",
+      "sha256": "9508d2e41402bd9db76891e0b5f02d59f1da64ac64eeeab87fe73d32d5d713ab"
+    },
+    {
+      "path": "app/api/flow-credentials/[id]/route.js",
+      "sha256": "0493a6a8fe4c8f983d0a9cde056a8e3ef3664c78a3124d55203026640c38e1a8"
+    },
+    {
+      "path": "app/api/flow-credentials/route.js",
+      "sha256": "f6e4dfc83c85533ec5cb8ab384dbe3f756475eeaa55bb31567e85fd4ae9cfe94"
+    },
+    {
+      "path": "app/api/flow-hooks/[id]/route.js",
+      "sha256": "d2605750d4ce184a63eb8ceea8d0c2c46ff926e818e4a47e6afdefc2d71ff120"
+    },
+    {
+      "path": "app/api/flows/[id]/cancel/route.js",
+      "sha256": "ee1d5cc9c3d32f6d72ddf3e256de2ecc1d49382bebd196c81e816dccd4613dd0"
+    },
+    {
+      "path": "app/api/flows/[id]/runs/[runId]/route.js",
+      "sha256": "009c705c0201ee7cc8ed55a0e86971392545ac4bde38b3ade8bdd450a33e9153"
+    },
+    {
+      "path": "app/api/flows/[id]/versions/[versionId]/route.js",
+      "sha256": "f9307540d698be91a3b7337986e99407be4cb391caa71f9054d97a23cfd4a4e9"
+    },
+    {
+      "path": "app/api/flows/[id]/versions/route.js",
+      "sha256": "87298c998dde51b0628e5caa5f801eb9579bbcc4312cc1d5166353ab5b8f677b"
+    },
+    {
+      "path": "app/api/flows/[id]/webhook/route.js",
+      "sha256": "af36698dea86bc9803eec3a6e08ed261f97d693dddf6a5d8bf8e384fe3b9bcef"
+    },
+    {
+      "path": "app/api/flows/blueprint/route.js",
+      "sha256": "1b0434afe7f28008c3e2e077c1b0ba6e513de7708be119311d3eeed53498792b"
+    },
+    {
+      "path": "app/flow-studio/page.js",
+      "sha256": "e446128d240f71944ca4717c16aef0159bc823b2777d24094d8187c7964e518e"
+    },
+    {
+      "path": "components/flows/pro/FlowHub.jsx",
+      "sha256": "35a93331807924618e06daa6cfb0deb65c551f3604b42cf336806b7ba3489b44"
+    },
+    {
+      "path": "components/flows/pro/FlowStudio.jsx",
+      "sha256": "cb241ee22020bf4c8918d55c5e32c923245c6539f97f79cc236a7a3fd0ccf7ba"
+    },
+    {
+      "path": "components/flows/pro/Inspector.jsx",
+      "sha256": "783eece3dfe8b80fe34b8eee53f24aaeb622c1157a373a9438db71e61865a237"
+    },
+    {
+      "path": "components/flows/pro/Palette.jsx",
+      "sha256": "91a0662ad6041d965916ca98ddad1cd25c721d3a36a5a89b76a3552922e21627"
+    },
+    {
+      "path": "components/flows/pro/Panels.jsx",
+      "sha256": "2653fb9e0056a3886de48dc492be7da372690dce0dd52f918beb929d4aed0fd3"
+    },
+    {
+      "path": "components/flows/pro/ProNode.jsx",
+      "sha256": "9ac45a20a03f6caca5dfbe778446ef362455176ecfdfb36d6253315497a67db3"
+    },
+    {
+      "path": "components/flows/pro/UI.jsx",
+      "sha256": "acd5c0f3db3ff41cde894025ca0c1ba851e2ace0465d765d1b04e24244769aa9"
+    },
+    {
+      "path": "components/flows/pro/studio.css",
+      "sha256": "191f817271e99b44e107eb76b66ae7803bbd55f1991dd6644bb6a167c481e981"
+    },
+    {
+      "path": "docs/FLOW_STUDIO_GUIDE.md",
+      "sha256": "1b03437435ad12be200d39182b82c7f68b38e7e00c77b4b3b9785cb2b25e626f"
+    },
+    {
+      "path": "docs/VERIFICATION.md",
+      "sha256": "e343bed2bc7e2d31744460ef75c04cc28bc724862e6ac34703a57cba855d3c7d"
+    },
+    {
+      "path": "docs/flow-test-results.txt",
+      "sha256": "6bca4ff26658b6dbad06359bf0afbc8c0cb76932a8558b3cfdf15a326623ec01"
+    },
+    {
+      "path": "docs/vercel.flow-cron.example.json",
+      "sha256": "a840fe3adcc116ba04ddc892022ef99dadc6d8e9f7633005c5b6529f3d1254af"
+    },
+    {
+      "path": "examples/flows/ai-content-pro.json",
+      "sha256": "1a75e5eae92a12cbbbc74182e628fd7b37703f04468341a6a4e93fa62e4a6dcf"
+    },
+    {
+      "path": "examples/flows/api-pipeline-pro.json",
+      "sha256": "b9c11925ee1178962c3a1c90fa0b5d36fa7f4ee2e666009e89b37cc743462531"
+    },
+    {
+      "path": "examples/flows/data-cleanup-pro.json",
+      "sha256": "e809bc680919871dbc6856a43fe24fa6b908a2aed2faf5512b6ace20e44bacc0"
+    },
+    {
+      "path": "examples/flows/error-recovery-pro.json",
+      "sha256": "a2b0edb91f46bd40de4fe9783f3a441e952a5ace784d12eb93568b935184b76c"
+    },
+    {
+      "path": "examples/flows/item-transform-pro.json",
+      "sha256": "aa13907e2c58a5cd5d5b756ef9f017e64483a2577741e76ae58afe2490bad69a"
+    },
+    {
+      "path": "examples/flows/lead-routing-pro.json",
+      "sha256": "550ee12f7aa82e057a5d46828dda55e985527e9a8425d327677cd608bebd56d4"
+    },
+    {
+      "path": "examples/flows/notify-multi-pro.json",
+      "sha256": "21e1c2425f4dd2a4f1e2e61ef5efc93907cbe753d0a54d27745bdc5556bda406"
+    },
+    {
+      "path": "examples/flows/support-routing-pro.json",
+      "sha256": "bd07ab326728b84f61de891ae56a80b22e565084e6834ce3258236599e80f2bb"
+    },
+    {
+      "path": "examples/flows/team-digest-pro.json",
+      "sha256": "ab44f52e16d8747fba409a10d460a7121b87641805ad59c74e7dc1d166441030"
+    },
+    {
+      "path": "lib/flowPro/builtins.mjs",
+      "sha256": "e6f3ed9427203c6bba9eacd1c9932d5c1eb8e641f2488f01a6e8aba172939282"
+    },
+    {
+      "path": "lib/flowPro/catalog.mjs",
+      "sha256": "5d432b625a888f7f0b80816c52d0aff0693edb65d56771bc6bd746e74264e9d7"
+    },
+    {
+      "path": "lib/flowPro/engine.mjs",
+      "sha256": "267011c2272ad6838a4b556e894f65f891e578ff957fa839f15067bdaff83acc"
+    },
+    {
+      "path": "lib/flowPro/expressions.mjs",
+      "sha256": "4dc38fe5b4966d96da663be2626687dcfc9439d28f152c88a17fcaa81e204505"
+    },
+    {
+      "path": "lib/flowPro/external.js",
+      "sha256": "f36610fb144fbd0e8fe7d54df4d5be36f9b101e8a5cf057b626e9ca8f5421a21"
+    },
+    {
+      "path": "lib/flowPro/graph.mjs",
+      "sha256": "135051d847c80e14f6371d1bcc6f61f0da989685f28128c2a154f4d1e65796f9"
+    },
+    {
+      "path": "lib/flowPro/safeHttp.mjs",
+      "sha256": "44189ec2bbf53e24e07355fa5d38472453065d4dbdb2a236423b03afb90d44e3"
+    },
+    {
+      "path": "lib/flowPro/schedule.mjs",
+      "sha256": "abcb9d319c30486b20bb0a5cd02a7d82ab2bfa3d04beaf7e96e172ebbab8e5d3"
+    },
+    {
+      "path": "lib/flowPro/server.js",
+      "sha256": "4c8c412a10f3b0d12a3361445cdfc29ab412c199121552530c38103a786cfb45"
+    },
+    {
+      "path": "lib/flowPro/templates.mjs",
+      "sha256": "9355dbe976a51007424e42ed5b5c85c13173c61ebbb62809f22d41b2c714329f"
+    },
+    {
+      "path": "models/FlowCredential.js",
+      "sha256": "e0c896d744d1bc31849d626121b77ba19f9c004b7032a6b7ba0a9d3037bced61"
+    },
+    {
+      "path": "models/FlowVersion.js",
+      "sha256": "8c6c3c3d49930d2a07c556bbdc7ed75d132c545e65b5244b116c50fd554e0f9f"
+    },
+    {
+      "path": "public/fonts/README.md",
+      "sha256": "8cf16b2f1b3051e92271a3d57f79e6030c224ef028d77eeef50b0bdb1752341c"
+    },
+    {
+      "path": "tests/flows/engine.test.mjs",
+      "sha256": "72054746344a2843de038c82470cf4530a4f9251d518ee3491dc1c1abb2d9874"
+    },
+    {
+      "path": "tests/flows/graph.test.mjs",
+      "sha256": "d3d194dc114f68d7647274705b71909e67f56554aeaed138e809d95a196b1847"
+    }
+  ],
+  "modified": [
+    {
+      "path": ".gitignore",
+      "sha256": "b8665ae55ba9879ceef6b8fd37c9fb382b3e1ad745b58c9212b21e75fa663279"
+    },
+    {
+      "path": "README.md",
+      "sha256": "d25fb076c12ac3b7cb0c350a7fefee1fcafbf1e93415c08cb93923269a1e43d3"
+    },
+    {
+      "path": "app/api/admin/users/credit-grant/route.js",
+      "sha256": "aaff01637209ff98ec21a90bdea7a7cfdc369f5bcbff36cbf9a0609e44e04d0c"
+    },
+    {
+      "path": "app/api/cron/drive-poll/route.js",
+      "sha256": "02a4f94b62e0f0b349918fe9778dc3ae40f239bf02fad374fee6db2224f40b14"
+    },
+    {
+      "path": "app/api/flows/[id]/route.js",
+      "sha256": "8e1b0f272d1e6489eb5072d173d68e6a3af88c30ea2b9cdf1ef3249128b47060"
+    },
+    {
+      "path": "app/api/flows/[id]/run/route.js",
+      "sha256": "b889bc6f0d04c7aa7c5549fdf7fa9a9148a7caee6cf3eb6fdcf408f35447ada2"
+    },
+    {
+      "path": "app/api/flows/[id]/runs/route.js",
+      "sha256": "3a33f7a6b32d9fe777321d087fe6ed4349bfd28eb2a7e2b8a9b77d7110173f4f"
+    },
+    {
+      "path": "app/api/flows/route.js",
+      "sha256": "00cda6358acca2604188e5aa3feaf93f2f58e78b92d5ac1710c3674b25cac84b"
+    },
+    {
+      "path": "app/dashboard/flows/[id]/page.js",
+      "sha256": "97167e817c2b1d51900b5249b7351783a052df6a918bcc1fe7ba073814cb4f45"
+    },
+    {
+      "path": "app/dashboard/flows/page.js",
+      "sha256": "c9005d8c64250cb35d89e06d3474dd6c908955db17bbe85e839f05a8ed7382b0"
+    },
+    {
+      "path": "components/flows/nodeTypesConfig.js",
+      "sha256": "4cfbc9e3fed6c0c5d0f91701e658f818d0b731a90c0b5b1155d38a5e5a7fa617"
+    },
+    {
+      "path": "lib/flowNodes/runFlow.js",
+      "sha256": "01592d931e8ad84bb49de7a19c47496623f63074d15bc1a972fc74dd8798ea29"
+    },
+    {
+      "path": "lib/flowTemplates.js",
+      "sha256": "846f2902acb2cb89a2f7a7c46075129067610810e62a3ecc41d7424a4e174750"
+    },
+    {
+      "path": "models/Flow.js",
+      "sha256": "f7512e214be1a2179e42399172bf3be42111ac7f9cf7ff6672912edb1dd126c5"
+    },
+    {
+      "path": "models/FlowRun.js",
+      "sha256": "3feca25b26c252ff4cf79c29ded08102b3e528ff0eaac93dec28d11052b0eaf7"
+    },
+    {
+      "path": "package.json",
+      "sha256": "c1d0be9b997b46dd428e4da92d59e9b3eaa410f8285fba38c0bc9df036d15381"
+    }
+  ],
+  "unchanged": [
+    "PHASE8_CHANGES.md",
+    "app/admin/activity/page.js",
+    "app/admin/billing/page.js",
+    "app/admin/conversations/page.js",
+    "app/admin/layout.js",
+    "app/admin/page.js",
+    "app/admin/pending-signups/page.js",
+    "app/admin/plans/page.js",
+    "app/admin/tool-costs/page.js",
+    "app/admin/users/page.js",
+    "app/api/admin/activity/route.js",
+    "app/api/admin/billing/route.js",
+    "app/api/admin/conversations/[id]/route.js",
+    "app/api/admin/conversations/route.js",
+    "app/api/admin/pending-signups/[id]/route.js",
+    "app/api/admin/pending-signups/route.js",
+    "app/api/admin/plans/[id]/route.js",
+    "app/api/admin/plans/route.js",
+    "app/api/admin/stats/route.js",
+    "app/api/admin/tool-costs/[toolId]/route.js",
+    "app/api/admin/tool-costs/route.js",
+    "app/api/admin/users/[id]/credit-grant/route.js",
+    "app/api/admin/users/[id]/route.js",
+    "app/api/admin/users/[id]/voices/[voiceId]/route.js",
+    "app/api/admin/users/export/route.js",
+    "app/api/admin/users/route.js",
+    "app/api/auth/[...nextauth]/route.js",
+    "app/api/auth/register/route.js",
+    "app/api/billing/checkout/route.js",
+    "app/api/billing/history/route.js",
+    "app/api/billing/jazzcash/callback/route.js",
+    "app/api/billing/jazzcash/initiate/route.js",
+    "app/api/billing/portal/route.js",
+    "app/api/billing/razorpay/create-order/route.js",
+    "app/api/billing/razorpay/verify/route.js",
+    "app/api/billing/webhook/route.js",
+    "app/api/chat/route.js",
+    "app/api/connections/[id]/route.js",
+    "app/api/connections/google/authorize/route.js",
+    "app/api/connections/google/callback/route.js",
+    "app/api/connections/meta/authorize/route.js",
+    "app/api/connections/meta/callback/route.js",
+    "app/api/connections/route.js",
+    "app/api/conversations/[id]/route.js",
+    "app/api/conversations/route.js",
+    "app/api/conversations/search/route.js",
+    "app/api/documents/convert/route.js",
+    "app/api/documents/convert-image/route.js",
+    "app/api/documents/convert-spreadsheet/route.js",
+    "app/api/documents/track-tool/route.js",
+    "app/api/growth/suggestions/route.js",
+    "app/api/image/route.js",
+    "app/api/inbox/[id]/reply/route.js",
+    "app/api/inbox/[id]/route.js",
+    "app/api/inbox/route.js",
+    "app/api/notifications/route.js",
+    "app/api/pdf/compress/route.js",
+    "app/api/pdf/images-to-pdf/route.js",
+    "app/api/pdf/merge/route.js",
+    "app/api/pdf/split/route.js",
+    "app/api/plans/route.js",
+    "app/api/projects/[id]/files/route.js",
+    "app/api/projects/[id]/route.js",
+    "app/api/projects/route.js",
+    "app/api/referrals/route.js",
+    "app/api/tts/clone-voice/route.js",
+    "app/api/tts/generate/route.js",
+    "app/api/tts/voices/[voiceId]/route.js",
+    "app/api/tts/voices/route.js",
+    "app/api/user/avatar/route.js",
+    "app/api/user/settings/route.js",
+    "app/api/webhooks/meta/route.js",
+    "app/apple-icon.js",
+    "app/dashboard/document-tools/compress-pdf/page.js",
+    "app/dashboard/document-tools/convert-document/page.js",
+    "app/dashboard/document-tools/convert-image/page.js",
+    "app/dashboard/document-tools/convert-spreadsheet/page.js",
+    "app/dashboard/document-tools/images-to-pdf/page.js",
+    "app/dashboard/document-tools/merge-pdf/page.js",
+    "app/dashboard/document-tools/page.js",
+    "app/dashboard/document-tools/pdf-to-images/page.js",
+    "app/dashboard/document-tools/split-pdf/page.js",
+    "app/dashboard/document-tools/text-to-speech/page.js",
+    "app/dashboard/growth/page.js",
+    "app/dashboard/inbox/page.js",
+    "app/dashboard/layout.js",
+    "app/dashboard/page.js",
+    "app/dashboard/pdf-tools/page.js",
+    "app/dashboard/projects/[id]/page.js",
+    "app/dashboard/projects/page.js",
+    "app/dashboard/referrals/page.js",
+    "app/dashboard/settings/page.js",
+    "app/globals.css",
+    "app/icon.js",
+    "app/layout.js",
+    "app/login/layout.js",
+    "app/login/page.js",
+    "app/opengraph-image.js",
+    "app/page.js",
+    "app/robots.js",
+    "app/share/[shareId]/page.js",
+    "app/signup/layout.js",
+    "app/signup/page.js",
+    "app/sitemap.js",
+    "components/AnswerBubble/ActionButtons.jsx",
+    "components/AnswerBubble/AnswerBubble.jsx",
+    "components/AnswerBubble/CodeBlock.jsx",
+    "components/AnswerBubble/ImageAnswer.jsx",
+    "components/AnswerBubble/ModelDropdown.jsx",
+    "components/AnswerBubble/TextAnswer.jsx",
+    "components/AnswerBubble/index.js",
+    "components/DocumentConvertTool.jsx",
+    "components/Footer.jsx",
+    "components/ImagesToPdfTool.jsx",
+    "components/LiveDemo.jsx",
+    "components/MergePdfTool.jsx",
+    "components/MermaidDiagram.jsx",
+    "components/Navbar.jsx",
+    "components/NotificationBell.jsx",
+    "components/PdfCompressTool.jsx",
+    "components/Providers.jsx",
+    "components/ShareModal.jsx",
+    "components/SharedConversationView.jsx",
+    "components/SplitPdfTool.jsx",
+    "components/TextToSpeechTool.jsx",
+    "components/admin/AdminSidebar.jsx",
+    "components/chat/ChatDashboard.jsx",
+    "components/chat/ChatHeader.jsx",
+    "components/chat/ChatInput.jsx",
+    "components/chat/ChatMessages.jsx",
+    "components/chat/DeleteModal.jsx",
+    "components/chat/MessageItem.jsx",
+    "components/chat/MoveToProjectModal.jsx",
+    "components/chat/OutlinePanel.jsx",
+    "components/chat/ProjectSettingsModal.jsx",
+    "components/chat/SearchModal.jsx",
+    "components/chat/Sidebar.jsx",
+    "components/chat/Suggestions.jsx",
+    "components/chat/TemporaryBanner.jsx",
+    "components/chat/UserMessageBubble.jsx",
+    "components/email-template.jsx",
+    "components/flows/AnimatedEdge.jsx",
+    "components/flows/ConfigField.jsx",
+    "components/flows/FlowNode.jsx",
+    "components/flows/NodeInspector.jsx",
+    "components/flows/NodePalette.jsx",
+    "components/flows/OnboardingHint.jsx",
+    "components/flows/TemplatePicker.jsx",
+    "components/flows/accentClasses.js",
+    "components/flows/nodeIcons.js",
+    "components/settings/BillingTab.jsx",
+    "components/settings/ConnectionsTab.jsx",
+    "components/settings/PreferencesTab.jsx",
+    "components/settings/ProfileTab.jsx",
+    "components/settings/SettingsPage.jsx",
+    "components/settings/Toggle.jsx",
+    "components/settings/index.js",
+    "jsconfig.json",
+    "lib/SettingsContext.jsx",
+    "lib/admin.js",
+    "lib/aiProviders.js",
+    "lib/auth.js",
+    "lib/cloudconvert.js",
+    "lib/cloudinary.js",
+    "lib/elevenlabs.js",
+    "lib/email.js",
+    "lib/emailTemplates/invoiceParserSummary.js",
+    "lib/encryption.js",
+    "lib/flowNodes/constants.js",
+    "lib/flowNodes/registry.js",
+    "lib/flowNodes/traverse.js",
+    "lib/formatForCopy.js",
+    "lib/googleClient.js",
+    "lib/growthInsights.js",
+    "lib/jazzcash.js",
+    "lib/mongodb.js",
+    "lib/pdfExport.js",
+    "lib/plans.js",
+    "lib/providers.js",
+    "lib/razorpay.js",
+    "lib/referral.js",
+    "lib/socialPosting.js",
+    "lib/stripe.js",
+    "lib/useTrackTool.js",
+    "middleware.js",
+    "models/AuditLog.js",
+    "models/Connection.js",
+    "models/Conversation.js",
+    "models/InboxMessage.js",
+    "models/Notification.js",
+    "models/Payment.js",
+    "models/PendingSignup.js",
+    "models/PlanConfig.js",
+    "models/Project.js",
+    "models/ToolCreditConfig.js",
+    "models/User.js",
+    "next.config.js",
+    "package-lock.json",
+    "postcss.config.js",
+    "public/llms.txt",
+    "scripts/rotate-encryption-key.js",
+    "tailwind.config.js",
+    "tests/credit-system.test.js",
+    "vercel.json"
+  ],
+  "assetNote": "Font binaries are omitted. Retain public/fonts from your original source for Arabic PDF export.",
+  "verification": "See docs/VERIFICATION.md. Full dependency-backed build and real-service integrations were not verified."
+}

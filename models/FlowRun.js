@@ -7,6 +7,16 @@ const FlowRunLogSchema = new mongoose.Schema(
   {
     nodeId: { type: String, required: true },
     nodeType: { type: String, required: true },
+    nodeLabel: { type: String, default: "" },
+    input: { type: mongoose.Schema.Types.Mixed, default: null },
+    message: { type: String, default: "" },
+    error: { type: String, default: null },
+    branch: { type: String, default: null },
+    attempts: { type: Number, default: 1 },
+    durationMs: { type: Number, default: 0 },
+    mock: { type: Boolean, default: false },
+    pinned: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["success", "failed", "skipped"],
@@ -31,7 +41,7 @@ const FlowRunSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     status: {
       type: String,
-      enum: ["running", "success", "failed"],
+      enum: ["running", "success", "failed", "completed_with_errors", "cancelled"],
       default: "running",
     },
     triggerType: {
@@ -39,6 +49,11 @@ const FlowRunSchema = new mongoose.Schema(
       enum: ["manual", "scheduled", "webhook"],
       required: true,
     },
+    mode: { type: String, enum: ["test", "live"], default: "live" },
+    cancelRequested: { type: Boolean, default: false },
+    graphRevision: { type: Number, default: 1 },
+    summary: { type: mongoose.Schema.Types.Mixed, default: {} },
+    durationMs: { type: Number, default: 0 },
     logs: [FlowRunLogSchema],
     error: { type: String, default: null }, // top-level failure reason, if any
     startedAt: { type: Date, default: Date.now },

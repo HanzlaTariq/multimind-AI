@@ -1,77 +1,17 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import dbConnect from "@/lib/mongodb";
-import Flow from "@/models/Flow";
-import { getFlowTemplate, buildFlowFromTemplate } from "@/lib/flowTemplates";
-
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return Response.json({ error: "You must be signed in" }, { status: 401 });
-  }
-
-  await dbConnect();
-
-  // List view only needs enough to render a card — not the full node/edge
-  // graph, which can get large once a flow has many nodes.
-  const flows = await Flow.find({ user: session.user.id })
-    .select("name description status updatedAt createdAt nodes")
-    .sort({ updatedAt: -1 })
-    .lean();
-
-  const result = flows.map((f) => ({
-    _id: f._id,
-    name: f.name,
-    description: f.description,
-    status: f.status,
-    nodeCount: f.nodes?.length || 0,
-    updatedAt: f.updatedAt,
-    createdAt: f.createdAt,
-  }));
-
-  return Response.json({ flows: result });
-}
-
-export async function POST(req) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return Response.json({ error: "You must be signed in" }, { status: 401 });
-  }
-
-  const { name, description, templateId } = await req.json();
-
-  // Phase 8: "New flow" can either start blank or 1-click duplicate one of
-  // the built-in templates (lib/flowTemplates.js). Name/description are
-  // still optional overrides on top of the template's defaults.
-  let template = null;
-  if (templateId) {
-    template = getFlowTemplate(templateId);
-    if (!template) {
-      return Response.json({ error: "Unknown template" }, { status: 400 });
-    }
-  }
-
-  const finalName = (name && name.trim()) || template?.flowName;
-  if (!finalName) {
-    return Response.json({ error: "Flow name is required" }, { status: 400 });
-  }
-
-  const finalDescription =
-    typeof description === "string" && description.trim()
-      ? description
-      : template?.flowDescription || "";
-
-  await dbConnect();
-
-  const graph = template ? buildFlowFromTemplate(template) : { nodes: [], edges: [] };
-
-  const flow = await Flow.create({
-    user: session.user.id,
-    name: finalName.trim().slice(0, 80),
-    description: finalDescription.slice(0, 500),
-    nodes: graph.nodes,
-    edges: graph.edges,
-  });
-
-  return Response.json({ flow });
-}
+import Flow from '@/models/Flow';
+import FlowRun from '@/models/FlowRun';
+import { getFlowTemplate, buildFlowFromTemplate } from '@/lib/flowTemplates';
+import { withFlowAuth, readJSON, checkedGraph, httpError, publicFlow } from '@/lib/flowPro/server';
+export const GET=withFlowAuth(async(req,ctx,userId)=>{
+ const flows=await Flow.find({user:userId}).select('name description status updatedAt createdAt nodes tags folder starred revision').sort({updatedAt:-1}).limit(500).lean();
+ const since=new Date(Date.now()-30*24*3600*1000);const runs=await FlowRun.find({user:userId,startedAt:{$gte:since}}).select('status durationMs mode flow startedAt').sort({startedAt:-1}).limit(2000).lean();
+ const successful=runs.filter(r=>r.status==='success').length;
+ return Response.json({flows:flows.map(f=>({...f,nodeCount:f.nodes?.filter(n=>n.type!=='utility.note').length||0,nodeTypes:f.nodes?.filter(n=>n.type!=='utility.note').map(n=>n.type).slice(0,6),nodes:undefined,lastRun:runs.find(r=>String(r.flow)===String(f._id))||null})),stats:{runs:runs.length,successRate:runs.length?Math.round(successful/runs.length*100):null,period:'Last 30 days, up to 2,000 runs'}});
+});
+export const POST=withFlowAuth(async(req,ctx,userId)=>{
+ const body=await readJSON(req);for(const key of ['variables','settings'])if(body[key]!==undefined&&(!body[key]||typeof body[key]!=='object'||Array.isArray(body[key])))throw httpError(`${key} must be an object`);const template=body.templateId?getFlowTemplate(body.templateId):null;if(body.templateId&&!template)throw httpError('Unknown template');
+ const name=String(body.name||template?.flowName||'Untitled workflow').trim().slice(0,80);if(!name)throw httpError('Flow name is required');
+ const graph=body.nodes?checkedGraph(body):template?buildFlowFromTemplate(template):{nodes:[],edges:[]};
+ const flow=await Flow.create({user:userId,name,description:String(body.description??template?.flowDescription??'').slice(0,500),...graph,status:'draft',tags:Array.isArray(body.tags)?body.tags.map(String).slice(0,10):template?.tags||[],folder:String(body.folder||'Personal').slice(0,50),variables:body.variables||template?.variables||{},settings:body.settings||{concurrency:3,timeoutMs:90000},testInput:body.testInput||template?.testInput||{}});
+ return Response.json({flow:publicFlow(flow)},{status:201});
+});

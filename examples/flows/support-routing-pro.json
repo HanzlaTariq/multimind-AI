@@ -1,0 +1,165 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.486Z",
+  "name": "Support ticket router",
+  "description": "Route incoming tickets to urgent, normal or fallback paths.",
+  "tags": [
+    "Support",
+    "Switch"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_2mcmcfn",
+      "type": "trigger.webhook",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Ticket received",
+        "config": {
+          "sampleBody": "{\"priority\":\"high\",\"subject\":\"Payment issue\"}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_1_2qou2e8",
+      "type": "logic.switch",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Ticket priority",
+        "config": {
+          "field": "priority",
+          "cases": "{\"urgent\":\"high\",\"normal\":\"medium\"}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_9wdz75r",
+      "type": "data.set",
+      "position": {
+        "x": 700,
+        "y": 20
+      },
+      "data": {
+        "label": "Escalate now",
+        "config": {
+          "fields": "{\"queue\":\"urgent\",\"slaMinutes\":15}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_tfki3tp",
+      "type": "data.set",
+      "position": {
+        "x": 700,
+        "y": 240
+      },
+      "data": {
+        "label": "Standard queue",
+        "config": {
+          "fields": "{\"queue\":\"standard\",\"slaMinutes\":120}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_4_nh097ju",
+      "type": "data.set",
+      "position": {
+        "x": 700,
+        "y": 460
+      },
+      "data": {
+        "label": "Triage queue",
+        "config": {
+          "fields": "{\"queue\":\"triage\",\"slaMinutes\":240}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_5_faamlpv",
+      "type": "data.merge",
+      "position": {
+        "x": 1020,
+        "y": 240
+      },
+      "data": {
+        "label": "Assigned ticket",
+        "config": {
+          "mode": "object"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_5o8cwpj",
+      "source": "node_0_2mcmcfn",
+      "target": "node_1_2qou2e8",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_pm7o0iw",
+      "source": "node_1_2qou2e8",
+      "target": "node_2_9wdz75r",
+      "sourceHandle": "urgent",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_rmu08wr",
+      "source": "node_1_2qou2e8",
+      "target": "node_3_tfki3tp",
+      "sourceHandle": "normal",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_g7o766j",
+      "source": "node_1_2qou2e8",
+      "target": "node_4_nh097ju",
+      "sourceHandle": "default",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_4_anjj158",
+      "source": "node_2_9wdz75r",
+      "target": "node_5_faamlpv",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_5_x5rex4j",
+      "source": "node_3_tfki3tp",
+      "target": "node_5_faamlpv",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_6_p7z6txq",
+      "source": "node_4_nh097ju",
+      "target": "node_5_faamlpv",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "priority": "high",
+    "subject": "Payment issue"
+  }
+}

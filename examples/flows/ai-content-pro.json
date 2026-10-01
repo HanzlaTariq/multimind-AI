@@ -1,0 +1,109 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.485Z",
+  "name": "AI content review",
+  "description": "Generate a structured content draft and prepare it for review.",
+  "tags": [
+    "AI",
+    "Content"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_eke747e",
+      "type": "trigger.manual",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Content brief",
+        "config": {}
+      }
+    },
+    {
+      "nodeId": "node_1_ol0m7t3",
+      "type": "ai.prompt",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Draft with AI",
+        "config": {
+          "systemPrompt": "Create concise marketing content. Return JSON with title, caption, and hashtags.",
+          "prompt": "Write a post about {{ $json.topic }}.",
+          "outputFormat": "json"
+        },
+        "mockData": {
+          "title": "A smarter workday",
+          "caption": "Make space for your best work.",
+          "hashtags": [
+            "productivity",
+            "automation"
+          ]
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_mx5ffhx",
+      "type": "data.set",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Mark for review",
+        "config": {
+          "fields": "{\"reviewStatus\":\"pending\",\"reviewer\":\"Marketing team\"}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_du3frle",
+      "type": "utility.log",
+      "position": {
+        "x": 1020,
+        "y": 200
+      },
+      "data": {
+        "label": "Draft prepared",
+        "config": {
+          "message": "Review manually before publishing"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_vd7w8in",
+      "source": "node_0_eke747e",
+      "target": "node_1_ol0m7t3",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_8w7nd5i",
+      "source": "node_1_ol0m7t3",
+      "target": "node_2_mx5ffhx",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_1j8tqiu",
+      "source": "node_2_mx5ffhx",
+      "target": "node_3_du3frle",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "topic": "a new productivity workspace"
+  }
+}

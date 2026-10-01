@@ -1,0 +1,108 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.486Z",
+  "name": "Multi-channel notifications",
+  "description": "Send the same event to Slack and Discord on parallel branches.",
+  "tags": [
+    "Parallel",
+    "Notifications"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_xlya4a4",
+      "type": "trigger.webhook",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Event received",
+        "config": {
+          "sampleBody": "{\"message\":\"New signup received\"}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_1_k82mqhw",
+      "type": "action.slack",
+      "position": {
+        "x": 380,
+        "y": 60
+      },
+      "data": {
+        "label": "Slack notification",
+        "config": {
+          "text": "{{ $json.message }}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_82vg1qb",
+      "type": "action.discord",
+      "position": {
+        "x": 380,
+        "y": 360
+      },
+      "data": {
+        "label": "Discord notification",
+        "config": {
+          "text": "{{ $json.message }}"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_lcusa7i",
+      "type": "data.merge",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "label": "Delivery results",
+        "config": {
+          "mode": "append"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_smd36v6",
+      "source": "node_0_xlya4a4",
+      "target": "node_1_k82mqhw",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_yf4neh0",
+      "source": "node_0_xlya4a4",
+      "target": "node_2_82vg1qb",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_2rli0ow",
+      "source": "node_1_k82mqhw",
+      "target": "node_3_lcusa7i",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_ou2ajow",
+      "source": "node_2_82vg1qb",
+      "target": "node_3_lcusa7i",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "message": "New signup received"
+  }
+}

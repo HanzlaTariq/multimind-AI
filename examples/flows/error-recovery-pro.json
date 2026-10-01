@@ -1,0 +1,133 @@
+{
+  "format": "multimind-flow",
+  "schemaVersion": 2,
+  "exportedAt": "2026-10-01T06:10:34.486Z",
+  "name": "Error recovery pattern",
+  "description": "Validate input, handle failures through an error output, and record the outcome.",
+  "tags": [
+    "Errors",
+    "Reliability"
+  ],
+  "variables": {},
+  "settings": {},
+  "nodes": [
+    {
+      "nodeId": "node_0_3p8s7vf",
+      "type": "trigger.manual",
+      "position": {
+        "x": 60,
+        "y": 200
+      },
+      "data": {
+        "label": "Start",
+        "config": {}
+      }
+    },
+    {
+      "nodeId": "node_1_rl74o5o",
+      "type": "logic.assert",
+      "position": {
+        "x": 380,
+        "y": 200
+      },
+      "data": {
+        "label": "Validate contact",
+        "config": {
+          "fields": "name,email"
+        },
+        "settings": {
+          "onError": "branch",
+          "retries": 0
+        }
+      }
+    },
+    {
+      "nodeId": "node_2_jhfbrdc",
+      "type": "utility.log",
+      "position": {
+        "x": 700,
+        "y": 80
+      },
+      "data": {
+        "label": "Valid contact",
+        "config": {
+          "message": "All required fields found"
+        }
+      }
+    },
+    {
+      "nodeId": "node_3_9j2jhih",
+      "type": "data.set",
+      "position": {
+        "x": 700,
+        "y": 380
+      },
+      "data": {
+        "label": "Capture error",
+        "config": {
+          "fields": "{\"status\":\"needs-review\",\"reason\":\"{{ $json.error }}\"}",
+          "keepInput": "yes"
+        }
+      }
+    },
+    {
+      "nodeId": "node_4_lhdyjoc",
+      "type": "data.merge",
+      "position": {
+        "x": 1020,
+        "y": 200
+      },
+      "data": {
+        "label": "Outcome",
+        "config": {
+          "mode": "object"
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "edge_0_yv3tnqp",
+      "source": "node_0_3p8s7vf",
+      "target": "node_1_rl74o5o",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_1_8tbf3fg",
+      "source": "node_1_rl74o5o",
+      "target": "node_2_jhfbrdc",
+      "sourceHandle": "out",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_2_8datlxp",
+      "source": "node_1_rl74o5o",
+      "target": "node_3_9j2jhih",
+      "sourceHandle": "error",
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_3_co7sqlz",
+      "source": "node_2_jhfbrdc",
+      "target": "node_4_lhdyjoc",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    },
+    {
+      "edgeId": "edge_4_vx1rdnd",
+      "source": "node_3_9j2jhih",
+      "target": "node_4_lhdyjoc",
+      "sourceHandle": null,
+      "targetHandle": null,
+      "label": ""
+    }
+  ],
+  "testInput": {
+    "name": "Sample contact"
+  }
+}

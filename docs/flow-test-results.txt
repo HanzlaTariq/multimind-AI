@@ -1,0 +1,376 @@
+
+> multimind-web@1.0.0 test:flows
+> node --test tests/flows/*.test.mjs
+
+TAP version 13
+# (node:1284) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///mnt/data/work/multimind-AI-main/components/flows/nodeTypesConfig.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /mnt/data/work/multimind-AI-main/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: template: lead-routing-pro executes in test mode
+ok 1 - template: lead-routing-pro executes in test mode
+  ---
+  duration_ms: 6.099327
+  type: 'test'
+  ...
+# Subtest: template: data-cleanup-pro executes in test mode
+ok 2 - template: data-cleanup-pro executes in test mode
+  ---
+  duration_ms: 1.762185
+  type: 'test'
+  ...
+# Subtest: template: api-pipeline-pro executes in test mode
+ok 3 - template: api-pipeline-pro executes in test mode
+  ---
+  duration_ms: 1.765819
+  type: 'test'
+  ...
+# Subtest: template: ai-content-pro executes in test mode
+ok 4 - template: ai-content-pro executes in test mode
+  ---
+  duration_ms: 0.782365
+  type: 'test'
+  ...
+# Subtest: template: support-routing-pro executes in test mode
+ok 5 - template: support-routing-pro executes in test mode
+  ---
+  duration_ms: 0.886238
+  type: 'test'
+  ...
+# Subtest: template: error-recovery-pro executes in test mode
+ok 6 - template: error-recovery-pro executes in test mode
+  ---
+  duration_ms: 0.753405
+  type: 'test'
+  ...
+# Subtest: template: item-transform-pro executes in test mode
+ok 7 - template: item-transform-pro executes in test mode
+  ---
+  duration_ms: 1.432034
+  type: 'test'
+  ...
+# Subtest: template: team-digest-pro executes in test mode
+ok 8 - template: team-digest-pro executes in test mode
+  ---
+  duration_ms: 0.589395
+  type: 'test'
+  ...
+# Subtest: template: notify-multi-pro executes in test mode
+ok 9 - template: notify-multi-pro executes in test mode
+  ---
+  duration_ms: 1.021673
+  type: 'test'
+  ...
+# Subtest: true branch passes original input and merge remains active
+ok 10 - true branch passes original input and merge remains active
+  ---
+  duration_ms: 1.576294
+  type: 'test'
+  ...
+# Subtest: false branch does not skip the shared merge
+ok 11 - false branch does not skip the shared merge
+  ---
+  duration_ms: 0.95506
+  type: 'test'
+  ...
+# Subtest: inactive nested branch does not execute descendants
+ok 12 - inactive nested branch does not execute descendants
+  ---
+  duration_ms: 0.599962
+  type: 'test'
+  ...
+# Subtest: parallel inputs are preserved by merge
+ok 13 - parallel inputs are preserved by merge
+  ---
+  duration_ms: 1.436926
+  type: 'test'
+  ...
+# Subtest: switch case and fallback route independently
+ok 14 - switch case and fallback route independently
+  ---
+  duration_ms: 0.894079
+  type: 'test'
+  ...
+# Subtest: error branch receives error data
+ok 15 - error branch receives error data
+  ---
+  duration_ms: 1.213609
+  type: 'test'
+  ...
+# Subtest: stop-on-error skips downstream actions
+ok 16 - stop-on-error skips downstream actions
+  ---
+  duration_ms: 0.388027
+  type: 'test'
+  ...
+# Subtest: continue-on-error produces explicit error input
+ok 17 - continue-on-error produces explicit error input
+  ---
+  duration_ms: 0.415289
+  type: 'test'
+  ...
+# Subtest: native node per-item mode maps input objects
+ok 18 - native node per-item mode maps input objects
+  ---
+  duration_ms: 8.486169
+  type: 'test'
+  ...
+# Subtest: pinned data is used in test mode
+ok 19 - pinned data is used in test mode
+  ---
+  duration_ms: 0.492314
+  type: 'test'
+  ...
+# Subtest: live mode ignores pins
+ok 20 - live mode ignores pins
+  ---
+  duration_ms: 0.425509
+  type: 'test'
+  ...
+# Subtest: test mode never invokes an external executor
+ok 21 - test mode never invokes an external executor
+  ---
+  duration_ms: 0.587802
+  type: 'test'
+  ...
+# Subtest: legacy placeholders cannot succeed in live mode
+ok 22 - legacy placeholders cannot succeed in live mode
+  ---
+  duration_ms: 0.459699
+  type: 'test'
+  ...
+# Subtest: bounded retries retry genuine failures
+ok 23 - bounded retries retry genuine failures
+  ---
+  duration_ms: 19.062471
+  type: 'test'
+  ...
+# Subtest: partial execution only runs ancestors of target
+ok 24 - partial execution only runs ancestors of target
+  ---
+  duration_ms: 1.030739
+  type: 'test'
+  ...
+# Subtest: seeded trigger selects only its own start branch
+ok 25 - seeded trigger selects only its own start branch
+  ---
+  duration_ms: 2.429798
+  type: 'test'
+  ...
+# Subtest: disabled nodes pass input without executing
+ok 26 - disabled nodes pass input without executing
+  ---
+  duration_ms: 0.510323
+  type: 'test'
+  ...
+# Subtest: cancellation marks remaining work skipped
+ok 27 - cancellation marks remaining work skipped
+  ---
+  duration_ms: 1.940318
+  type: 'test'
+  ...
+# Subtest: long inline waits fail explicitly, never simulate live success
+ok 28 - long inline waits fail explicitly, never simulate live success
+  ---
+  duration_ms: 0.777297
+  type: 'test'
+  ...
+# Subtest: logs redact secrets and cap large values
+ok 29 - logs redact secrets and cap large values
+  ---
+  duration_ms: 0.473387
+  type: 'test'
+  ...
+# Subtest: unknown node types cannot report mocked success
+ok 30 - unknown node types cannot report mocked success
+  ---
+  duration_ms: 0.682473
+  type: 'test'
+  ...
+# Subtest: duplicate nodes are rejected by the execution engine itself
+ok 31 - duplicate nodes are rejected by the execution engine itself
+  ---
+  duration_ms: 0.246573
+  type: 'test'
+  ...
+# Subtest: external timeouts are not retried
+ok 32 - external timeouts are not retried
+  ---
+  duration_ms: 11.040488
+  type: 'test'
+  ...
+# Subtest: abort during final step reports cancelled rather than failed
+ok 33 - abort during final step reports cancelled rather than failed
+  ---
+  duration_ms: 0.589231
+  type: 'test'
+  ...
+# Subtest: per-item execution refuses unbounded item counts
+ok 34 - per-item execution refuses unbounded item counts
+  ---
+  duration_ms: 0.671117
+  type: 'test'
+  ...
+# (node:1285) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///mnt/data/work/multimind-AI-main/components/flows/nodeTypesConfig.js is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /mnt/data/work/multimind-AI-main/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: safe expressions preserve object and number types
+ok 35 - safe expressions preserve object and number types
+  ---
+  duration_ms: 2.218888
+  type: 'test'
+  ...
+# Subtest: fallback expressions handle missing fields
+ok 36 - fallback expressions handle missing fields
+  ---
+  duration_ms: 0.244855
+  type: 'test'
+  ...
+# Subtest: array paths are supported
+ok 37 - array paths are supported
+  ---
+  duration_ms: 0.15739
+  type: 'test'
+  ...
+# Subtest: prototype traversal is rejected
+ok 38 - prototype traversal is rejected
+  ---
+  duration_ms: 0.485209
+  type: 'test'
+  ...
+# Subtest: arbitrary expressions are rejected
+ok 39 - arbitrary expressions are rejected
+  ---
+  duration_ms: 0.250012
+  type: 'test'
+  ...
+# Subtest: JSON prototype pollution is rejected
+ok 40 - JSON prototype pollution is rejected
+  ---
+  duration_ms: 0.190781
+  type: 'test'
+  ...
+# Subtest: numeric comparisons do not use string ordering
+ok 41 - numeric comparisons do not use string ordering
+  ---
+  duration_ms: 0.154889
+  type: 'test'
+  ...
+# Subtest: cycle detection rejects a back edge
+ok 42 - cycle detection rejects a back edge
+  ---
+  duration_ms: 1.386806
+  type: 'test'
+  ...
+# Subtest: connection validation detects cycle before adding edge
+ok 43 - connection validation detects cycle before adding edge
+  ---
+  duration_ms: 0.351025
+  type: 'test'
+  ...
+# Subtest: dangling edge is rejected
+ok 44 - dangling edge is rejected
+  ---
+  duration_ms: 0.752949
+  type: 'test'
+  ...
+# Subtest: duplicate node IDs are rejected
+ok 45 - duplicate node IDs are rejected
+  ---
+  duration_ms: 0.905253
+  type: 'test'
+  ...
+# Subtest: graph size is bounded
+ok 46 - graph size is bounded
+  ---
+  duration_ms: 0.811917
+  type: 'test'
+  ...
+# Subtest: triggers cannot have incoming connections
+ok 47 - triggers cannot have incoming connections
+  ---
+  duration_ms: 0.211068
+  type: 'test'
+  ...
+# Subtest: all templates pass structural validation
+ok 48 - all templates pass structural validation
+  ---
+  duration_ms: 1.213806
+  type: 'test'
+  ...
+# Subtest: canvas and backend roundtrip without runtime state
+ok 49 - canvas and backend roundtrip without runtime state
+  ---
+  duration_ms: 0.605688
+  type: 'test'
+  ...
+# Subtest: portable export omits credentials and pins
+ok 50 - portable export omits credentials and pins
+  ---
+  duration_ms: 2.113885
+  type: 'test'
+  ...
+# Subtest: unsupported export versions are rejected
+ok 51 - unsupported export versions are rejected
+  ---
+  duration_ms: 0.267394
+  type: 'test'
+  ...
+# Subtest: layout keeps valid finite node positions
+ok 52 - layout keeps valid finite node positions
+  ---
+  duration_ms: 0.376499
+  type: 'test'
+  ...
+# Subtest: Karachi daily schedule converts timezone correctly
+ok 53 - Karachi daily schedule converts timezone correctly
+  ---
+  duration_ms: 18.919559
+  type: 'test'
+  ...
+# Subtest: weekly schedule uses the next matching day
+ok 54 - weekly schedule uses the next matching day
+  ---
+  duration_ms: 36.197953
+  type: 'test'
+  ...
+# Subtest: invalid timezone and time are rejected
+ok 55 - invalid timezone and time are rejected
+  ---
+  duration_ms: 0.516974
+  type: 'test'
+  ...
+# Subtest: SSRF protections block private/reserved destinations
+ok 56 - SSRF protections block private/reserved destinations
+  ---
+  duration_ms: 5.154405
+  type: 'test'
+  ...
+# Subtest: HTTPS allowlist rejects unknown hosts and unsafe URLs
+ok 57 - HTTPS allowlist rejects unknown hosts and unsafe URLs
+  ---
+  duration_ms: 0.390191
+  type: 'test'
+  ...
+# Subtest: portable export strips secrets from nested and JSON-text config
+ok 58 - portable export strips secrets from nested and JSON-text config
+  ---
+  duration_ms: 0.332326
+  type: 'test'
+  ...
+# Subtest: legacy minute waits retain their duration during normalization
+ok 59 - legacy minute waits retain their duration during normalization
+  ---
+  duration_ms: 0.154058
+  type: 'test'
+  ...
+1..59
+# tests 59
+# suites 0
+# pass 59
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 171.326364

@@ -1,0 +1,5 @@
+import FlowCredential from '@/models/FlowCredential';
+import { encryptText } from '@/lib/encryption';
+import { withFlowAuth, readJSON, httpError } from '@/lib/flowPro/server';
+export const GET=withFlowAuth(async(req,ctx,userId)=>Response.json({credentials:await FlowCredential.find({user:userId}).select('name type headerName createdAt').sort({createdAt:-1}).lean()}));
+export const POST=withFlowAuth(async(req,ctx,userId)=>{const body=await readJSON(req);if(!['bearer','basic','header','slackWebhook','discordWebhook','telegram'].includes(body.type))throw httpError('Invalid credential type');if(!body.name||typeof body.secret!=='string'||!body.secret||body.secret.length>8192)throw httpError('A name and secret (up to 8 KB) are required');const headerName=String(body.headerName||'X-API-Key');if(!/^[A-Za-z0-9-]{1,80}$/.test(headerName))throw httpError('Invalid header name');const credential=await FlowCredential.create({user:userId,name:String(body.name).slice(0,80),type:body.type,secret:encryptText(body.secret),headerName});return Response.json({credential:{_id:credential._id,name:credential.name,type:credential.type}},{status:201});});

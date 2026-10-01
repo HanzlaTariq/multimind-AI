@@ -1,0 +1,7 @@
+import crypto from 'node:crypto';
+import Flow from '@/models/Flow';
+import dbConnect from '@/lib/mongodb';
+import { assertId, constantTimeEqual, readJSON, httpError } from '@/lib/flowPro/server';
+import { runFlow } from '@/lib/flowNodes/runFlow';
+export const maxDuration=120;
+export async function POST(req,{params}){try{assertId(params.id);await dbConnect();const token=(req.headers.get('authorization')||'').replace(/^Bearer /,'');if(!token||token.length>256)throw httpError('Unauthorized',401);const hash=crypto.createHash('sha256').update(token).digest('hex');const flow=await Flow.findById(params.id).select('+webhookTokenHash');if(!flow||!flow.webhookTokenHash||!constantTimeEqual(hash,flow.webhookTokenHash))throw httpError('Unauthorized',401);if(flow.status!=='active')throw httpError('Workflow is not active',409);const trigger=flow.nodes.find(n=>n.type==='trigger.webhook');if(!trigger)throw httpError('Workflow has no webhook trigger');const accepted=await Flow.findOneAndUpdate({_id:flow._id,$or:[{webhookLastRunAt:null},{webhookLastRunAt:{$lt:new Date(Date.now()-5000)}}]},{$set:{webhookLastRunAt:new Date()}});if(!accepted)throw httpError('Webhook rate limit reached; retry later',429);const input=await readJSON(req);const run=await runFlow(flow,{userId:String(flow.user),triggerType:'webhook',mode:'live',input,seedOutputs:new Map([[trigger.nodeId,input]])});return Response.json({runId:run._id,status:run.status});}catch(e){return Response.json({error:e.status?e.message:'Webhook execution failed'},{status:e.status||500});}}

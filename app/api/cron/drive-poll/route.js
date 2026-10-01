@@ -3,7 +3,7 @@ import Flow from "@/models/Flow";
 import { getFreshAccessToken, driveListRecentFiles } from "@/lib/googleClient";
 import { runFlow } from "@/lib/flowNodes/runFlow";
 
-// Polled by Vercel Cron every 5 minutes (see vercel.json). Vercel is
+// Polled at the cadence configured in vercel.json (daily in the supplied file). Vercel is
 // serverless, so there's no long-lived process to hold a Drive
 // `watch()` push-notification channel open (that needs a publicly
 // reachable HTTPS callback plus a renewal job of its own) — polling
@@ -17,7 +17,7 @@ import { runFlow } from "@/lib/flowNodes/runFlow";
 // project's env vars — see https://vercel.com/docs/cron-jobs/manage-cron-jobs#securing-cron-jobs.
 // Reject anything else so this route can't be hit as an open trigger.
 function isAuthorized(req) {
-  if (!process.env.CRON_SECRET) return true; // local dev without a secret configured
+  if (!process.env.CRON_SECRET) return false; // Fail closed: never expose an unauthenticated cron trigger.
   return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
 }
 
