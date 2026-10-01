@@ -1,5 +1,6 @@
 "use client";
 
+import ApiCredentials from "./ApiCredentials";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Instagram, Facebook, MessageCircle, Music2, Chrome, Unlink, Loader2 } from "lucide-react";
@@ -42,7 +43,7 @@ const PLATFORMS = [
     label: "Google",
     icon: Chrome,
     connectHref: "/api/connections/google/authorize",
-    note: "Drive, Sheets & Gmail — powers the Invoice Parser Agent template.",
+    note: "Drive, Sheets & Gmail — used by ready-made tools and advanced workflows.",
   },
 ];
 
@@ -86,7 +87,7 @@ export default function ConnectionsTab() {
       <div>
         <h2 className="font-display text-lg font-semibold text-paper">Connections</h2>
         <p className="mt-1 text-sm text-mist">
-          Link your social accounts so Flows nodes (Post, Reply, DM, etc.) can act on your behalf.
+          Connect accounts for ready-made tools and advanced workflows. Your credentials are managed here, not inside individual tools.
         </p>
       </div>
 
@@ -173,6 +174,7 @@ export default function ConnectionsTab() {
           );
         })}
       </div>
+      <ApiCredentials />
     </div>
   );
 }

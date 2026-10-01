@@ -1,0 +1,290 @@
+{
+  "name": "MultiMind Ready Tools Pro — UPDATE ONLY",
+  "base": "Previous MultiMind Flow Studio Pro update/full tree. Does not require removing an installed Windows icon fix.",
+  "installation": "Merge into existing project root; replace listed files. Never delete entire app/components/lib folders.",
+  "counts": {
+    "updated": 12,
+    "new": 31,
+    "deleted": 0,
+    "total_files": 43
+  },
+  "dependencies_changed": false,
+  "existing_secrets_fonts_and_icons_untouched": true,
+  "files": [
+    {
+      "path": "READY_TOOLS_START_HERE.md",
+      "change": "new",
+      "sha256": "a15409c06beafe022ef1c2df71bb01adf51fec7ce1826f515490029641955a0c",
+      "bytes": 4703
+    },
+    {
+      "path": "app/api/ready-tools/[toolId]/run/route.js",
+      "change": "new",
+      "sha256": "5ef01c41389fc37924ed3a845d6d4923d427c4ac50bbe5221df37116e0cd3837",
+      "bytes": 290
+    },
+    {
+      "path": "app/api/ready-tools/capabilities/route.js",
+      "change": "new",
+      "sha256": "c105461f4b9b928ff964f1dce5b9ea438f9bcbdb8a51f0b7c2affcfeaa74ae76",
+      "bytes": 249
+    },
+    {
+      "path": "app/api/ready-tools/workspace/route.js",
+      "change": "new",
+      "sha256": "e3d907670f59aa566833c5a2e2dc74799d2857e7f9ea0fc9aa138adc9564abd8",
+      "bytes": 387
+    },
+    {
+      "path": "app/dashboard/flows/error.js",
+      "change": "new",
+      "sha256": "c2f009cd90e994fbfa5cc07bad2bad1053c3cff558653558e0b6bc1893407841",
+      "bytes": 690
+    },
+    {
+      "path": "app/dashboard/flows/loading.js",
+      "change": "new",
+      "sha256": "995744e0c80011a6b91a93182d4d22ab4f4119d0ca2d41c358adce270d9a5cee",
+      "bytes": 179
+    },
+    {
+      "path": "app/dashboard/flows/page.js",
+      "change": "updated",
+      "sha256": "028f3eea1744a12093261b4d0e51a94077272c0a31616029e6ab77cc7b0fa72d",
+      "bytes": 162
+    },
+    {
+      "path": "app/dashboard/flows/tools/[toolId]/page.js",
+      "change": "new",
+      "sha256": "f529b01f372f3d0d3c045159ada971b30bee7706c65b58ff8f3e71eb677428df",
+      "bytes": 416
+    },
+    {
+      "path": "app/dashboard/flows/workflows/page.js",
+      "change": "new",
+      "sha256": "059926f33b1caa968ad1f4ec74dbfadc6c5acffe0cf598aafdfdf72f539497c2",
+      "bytes": 166
+    },
+    {
+      "path": "components/flows/pro/FlowHub.jsx",
+      "change": "updated",
+      "sha256": "602c999a8fb3acfafa32c2f00f78979c2a25e8f615e87ca8815636861c3e4513",
+      "bytes": 12760
+    },
+    {
+      "path": "components/flows/pro/FlowStudio.jsx",
+      "change": "updated",
+      "sha256": "8f0edb2047f74445784ba3c9a3996f68e60af2bba591b3492c3eb5adf28def86",
+      "bytes": 40023
+    },
+    {
+      "path": "components/flows/pro/Inspector.jsx",
+      "change": "updated",
+      "sha256": "9cec7e30bd6f4df7bc717f7ea1b844e6c209049f69de429ba278448cebb8fe3a",
+      "bytes": 9244
+    },
+    {
+      "path": "components/flows/pro/studio.css",
+      "change": "updated",
+      "sha256": "867582128c84385490c43cb79b30d19ea1a6c475aa85f7430c691937b947cf14",
+      "bytes": 28436
+    },
+    {
+      "path": "components/ready-tools/DatasetInput.jsx",
+      "change": "new",
+      "sha256": "ee9939508ec054149eb669b132e522bec2def19e09f3fcd1b0466471f70b50e4",
+      "bytes": 4554
+    },
+    {
+      "path": "components/ready-tools/OptionsForm.jsx",
+      "change": "new",
+      "sha256": "074eb6a990c574ace29db4cffe1946938caa52b649b48baab610aeba3ebf45c1",
+      "bytes": 6021
+    },
+    {
+      "path": "components/ready-tools/ResultView.jsx",
+      "change": "new",
+      "sha256": "617dc0c4c0601c06274d01775a97ec34b4021bd3fab5ddf61a6bc977a52a140a",
+      "bytes": 6965
+    },
+    {
+      "path": "components/ready-tools/ToolHub.jsx",
+      "change": "new",
+      "sha256": "bd22dcc9e0d8996b88a3c74c0caba9463286d63a47dd981fc5919fff3593a9be",
+      "bytes": 9827
+    },
+    {
+      "path": "components/ready-tools/ToolRunner.jsx",
+      "change": "new",
+      "sha256": "903ae26d27e69a9c3a4c8901e4cf8a5757b41305a5506cdf4da578200bf7f717",
+      "bytes": 18198
+    },
+    {
+      "path": "components/ready-tools/tools.css",
+      "change": "new",
+      "sha256": "300f293b1db4c6936a109cb9b281038e44c8eb5a260d03f4ec3cac894da98b1c",
+      "bytes": 44985
+    },
+    {
+      "path": "components/ready-tools/ui.jsx",
+      "change": "new",
+      "sha256": "1bf595b3f6a0ba48048bd626594f6cca7ef3f847de370f73170343cd80022f61",
+      "bytes": 6887
+    },
+    {
+      "path": "components/settings/ApiCredentials.jsx",
+      "change": "new",
+      "sha256": "c8f3a83ecfb2c2d58417dcee315442d0a4b30d5151de460a991c06045f607b79",
+      "bytes": 3964
+    },
+    {
+      "path": "components/settings/ConnectionsTab.jsx",
+      "change": "updated",
+      "sha256": "26a0f43939578fb5f462dfca84f079cad997d793fbcbc51ae7eef21b74c0e753",
+      "bytes": 6576
+    },
+    {
+      "path": "components/settings/PreferencesTab.jsx",
+      "change": "updated",
+      "sha256": "bf758df1d0be7eb8ac91c27d29306a17f2a152136e4a33e818acadf54c05082b",
+      "bytes": 5633
+    },
+    {
+      "path": "components/settings/SettingsPage.jsx",
+      "change": "updated",
+      "sha256": "5caa3af87dc6ef5e3481a12ce0b040268d5d086ae6e790a1b5efc7f08fe29deb",
+      "bytes": 2637
+    },
+    {
+      "path": "components/settings/ToolPreferencesTab.jsx",
+      "change": "new",
+      "sha256": "4cf4252d88d8b21f29aa4e1dabef6dc81d6f3f6a7564404955ad1d512220ddff",
+      "bytes": 3836
+    },
+    {
+      "path": "docs/READY_TOOLS_GUIDE.md",
+      "change": "new",
+      "sha256": "1c3809989d0250e939f4c3143d7573f8a7e9689891a2284aaca6ab75fa19d35d",
+      "bytes": 10828
+    },
+    {
+      "path": "docs/READY_TOOLS_TEST_REPORT.md",
+      "change": "new",
+      "sha256": "818ee80d33ca706a001542fcf8df0ca5ee2dcf18c63b67472f6a3adbedcdff4e",
+      "bytes": 6480
+    },
+    {
+      "path": "lib/SettingsContext.jsx",
+      "change": "updated",
+      "sha256": "5c96a043136caac888f9edbff3fec5ca9105936163908491458eea87d90d699e",
+      "bytes": 6486
+    },
+    {
+      "path": "lib/aiProviders.js",
+      "change": "updated",
+      "sha256": "1fe6d9c0a64be01ecdc5d9802f2175038bfbc7df441e3a7f51758e236281bbd8",
+      "bytes": 7130
+    },
+    {
+      "path": "lib/flowPro/external.js",
+      "change": "updated",
+      "sha256": "1721dd798644525e6cbb40f49077b73f7c8604b1fbd4d055fafa856bcf14b444",
+      "bytes": 5169
+    },
+    {
+      "path": "lib/googleClient.js",
+      "change": "updated",
+      "sha256": "36cfebc0a9e336117b9ddf48878164f6362984e05a4394dcd2a3e912d058df50",
+      "bytes": 10384
+    },
+    {
+      "path": "lib/readyTools/catalog.mjs",
+      "change": "new",
+      "sha256": "e15960ce5942a89b3b9c57bdb268a36e71fd07715743099b27a8d49a17e59aa6",
+      "bytes": 7985
+    },
+    {
+      "path": "lib/readyTools/data.mjs",
+      "change": "new",
+      "sha256": "7aeced189850363bb49953a21bd0e585982af72ef21c41189ee8b58d7e4a7b2a",
+      "bytes": 5504
+    },
+    {
+      "path": "lib/readyTools/files.mjs",
+      "change": "new",
+      "sha256": "46b7974a4ee4b98aa491306c11f000b47ce6aa490553e9656dc1f3da35dd9dac",
+      "bytes": 9364
+    },
+    {
+      "path": "lib/readyTools/handoff.mjs",
+      "change": "new",
+      "sha256": "4fea028e054a5899860e184f33d9eb66e79d37d735ae6d7bf9b573c513035453",
+      "bytes": 437
+    },
+    {
+      "path": "lib/readyTools/local.mjs",
+      "change": "new",
+      "sha256": "7ec4f47a76617671d63a7997369e6774e43da7d30a87e1f70eb6bf1410b99ed2",
+      "bytes": 9319
+    },
+    {
+      "path": "lib/readyTools/prompts.mjs",
+      "change": "new",
+      "sha256": "fb6e745997497153a63ceb644a69ba1f440b8b802f1654cf7cb71d74d5a2b711",
+      "bytes": 3582
+    },
+    {
+      "path": "lib/readyTools/server.js",
+      "change": "new",
+      "sha256": "888c609822f892d1c0156554fd075f0f9d6edc1980a832b7353df9898faa2411",
+      "bytes": 14281
+    },
+    {
+      "path": "models/ReadyToolGate.js",
+      "change": "new",
+      "sha256": "aac356fe2ae19f120549b3d8669e0038b1608751247997b7e1dd83d3423919f6",
+      "bytes": 226
+    },
+    {
+      "path": "models/ReadyToolRun.js",
+      "change": "new",
+      "sha256": "0ec8042e7b8581ed7dd510122a82d805001c0837981303360e6908fb157d63e5",
+      "bytes": 798
+    },
+    {
+      "path": "models/ReadyToolWorkspace.js",
+      "change": "new",
+      "sha256": "c0e24f4ce811d0f33abebe0c6d8377e1b54c920acd7399cdc62787319df7aae9",
+      "bytes": 946
+    },
+    {
+      "path": "tests/flows/ready-tools.test.mjs",
+      "change": "new",
+      "sha256": "d97a009a29701034b401ed9a2ae509dc25ee90e896aa5a6bbc80f76229b2dbf3",
+      "bytes": 12321
+    }
+  ],
+  "self": {
+    "path": "READY_TOOLS_CHANGE_MANIFEST.json",
+    "change": "new",
+    "note": "This manifest is counted as a new file; its own hash is intentionally not recursive."
+  },
+  "tests": {
+    "node": {
+      "passed": 122,
+      "failed": 0
+    },
+    "isolated_browser_components": {
+      "passed": 35,
+      "failed": 0,
+      "mocked": [
+        "Next routing",
+        "NextAuth",
+        "server APIs",
+        "icons"
+      ]
+    },
+    "full_next_build": "Not completed: dependency registry DNS/network unavailable"
+  },
+  "removed": []
+}

@@ -1,0 +1,3 @@
+'use client';
+import Link from 'next/link';
+export default function ErrorPage({reset}){return <main className="min-h-screen bg-ink px-6 py-20 text-paper"><div className="mx-auto max-w-lg rounded-2xl border border-line bg-surface p-8"><h1 className="text-2xl font-semibold">This screen could not load.</h1><p className="my-4 text-mist">Your original files are unchanged. Retry the screen, or return to the dashboard. Results held only in this browser page may need to be recreated.</p><div className="flex gap-4"><button onClick={reset} className="rounded-lg bg-signal px-4 py-2 text-ink">Try again</button><Link href="/dashboard" className="px-4 py-2">Dashboard</Link></div></div></main>;}

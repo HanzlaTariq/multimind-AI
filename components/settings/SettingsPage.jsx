@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, User as UserIcon, SlidersHorizontal, CreditCard, Link2 } from "lucide-react";
@@ -8,11 +8,13 @@ import ProfileTab from "./ProfileTab";
 import PreferencesTab from "./PreferencesTab";
 import BillingTab from "./BillingTab";
 import ConnectionsTab from "./ConnectionsTab";
+import ToolPreferencesTab from "./ToolPreferencesTab";
 
 const TABS = [
   { id: "profile", label: "Profile", icon: UserIcon },
   { id: "preferences", label: "Preferences", icon: SlidersHorizontal },
   { id: "connections", label: "Connections", icon: Link2 },
+  { id: "tools", label: "Tools & Workflows", icon: SlidersHorizontal },
   { id: "billing", label: "Plan & Billing", icon: CreditCard },
 ];
 
@@ -22,6 +24,7 @@ export default function SettingsPage() {
     ? searchParams.get("tab")
     : "profile";
   const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
 
   return (
     <div className="min-h-screen bg-ink">
@@ -54,6 +57,7 @@ export default function SettingsPage() {
           {activeTab === "profile" && <ProfileTab />}
           {activeTab === "preferences" && <PreferencesTab />}
           {activeTab === "connections" && <ConnectionsTab />}
+          {activeTab === "tools" && <ToolPreferencesTab />}
           {activeTab === "billing" && <BillingTab />}
         </div>
       </div>

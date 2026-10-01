@@ -21,6 +21,12 @@ const THEME_OPTIONS = [
 export default function PreferencesTab() {
   const { settings, updateSettings } = useSettings();
   const [notifPermissionDenied, setNotifPermissionDenied] = useState(false);
+  const [themeStatus, setThemeStatus] = useState(null);
+  async function saveTheme(theme) {
+    setThemeStatus({ text: "Saving appearance…", error: false });
+    const result = await updateSettings({ theme });
+    setThemeStatus(result.ok ? { text: "Appearance saved for the whole workspace.", error: false } : { text: "Theme applied here, but account sync failed. Please try again.", error: true });
+  }
   const selectedFontClass =
     FONT_OPTIONS.find((f) => f.value === settings.chatFont)?.className || "font-body";
 
@@ -40,7 +46,7 @@ export default function PreferencesTab() {
     <div className="max-w-xl space-y-8">
       <div>
         <h2 className="font-display text-lg font-semibold text-paper">Preferences</h2>
-        <p className="mt-1 text-sm text-mist">Control how MultiMind looks and behaves for you.</p>
+        <p className="mt-1 text-sm text-mist">Control the whole workspace: chat, ready-made tools, workflow library and advanced canvas.</p>
       </div>
 
       <div>
@@ -49,7 +55,7 @@ export default function PreferencesTab() {
           {THEME_OPTIONS.map((t) => (
             <button
               key={t.value}
-              onClick={() => updateSettings({ theme: t.value })}
+              onClick={() => saveTheme(t.value)}
               className={`overflow-hidden rounded-xl border-2 transition ${
                 settings.theme === t.value ? "border-signal" : "border-line hover:border-mist/40"
               }`}
@@ -65,6 +71,7 @@ export default function PreferencesTab() {
             </button>
           ))}
         </div>
+        {themeStatus && <p role={themeStatus.error ? "alert" : "status"} className={`mt-2 text-xs ${themeStatus.error ? "text-red-400" : "text-mist"}`}>{themeStatus.text}</p>}
       </div>
 
       <div>
